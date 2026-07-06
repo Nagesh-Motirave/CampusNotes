@@ -1,0 +1,66 @@
+server:
+  port: 8080
+
+spring:
+  application:
+    name: api-gateway
+  codec:
+    max-in-memory-size: 15MB
+  cloud:
+    gateway:
+      # Global CORS configuration for React frontend
+      globalcors:
+        cors-configurations:
+          '[/**]':
+            allowedOrigins:
+              - "http://localhost:5173"
+              - "http://localhost:3000"
+            allowedMethods:
+              - GET
+              - POST
+              - PUT
+              - DELETE
+              - OPTIONS
+            allowedHeaders: "*"
+            allowCredentials: true
+            maxAge: 3600
+
+      # Route definitions for downstream microservices
+      routes:
+        - id: auth-service
+          uri: ${AUTH_SERVICE_URL:http://localhost:8081}
+          predicates:
+            - Path=/auth/**
+
+        - id: notes-service
+          uri: ${NOTES_SERVICE_URL:http://localhost:8082}
+          predicates:
+            - Path=/notes/**
+
+        - id: user-service
+          uri: ${USER_SERVICE_URL:http://localhost:8083}
+          predicates:
+            - Path=/users/**
+
+        - id: file-upload-service
+          uri: ${FILE_UPLOAD_SERVICE_URL:http://localhost:8084}
+          predicates:
+            - Path=/upload/**
+
+# JWT configuration (used by gateway filter for token validation)
+jwt:
+  secret: ${JWT_SECRET:campus-notes-hub-secret-key-that-is-at-least-256-bits-long-for-hs256}
+
+# Eureka client (disabled by default — enable when Eureka server is running)
+eureka:
+  client:
+    enabled: false
+    serviceUrl:
+      defaultZone: http://localhost:8761/eureka/
+
+# Actuator endpoints
+management:
+  endpoints:
+    web:
+      exposure:
+        include: health,info,gateway

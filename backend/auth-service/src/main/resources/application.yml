@@ -1,0 +1,13 @@
+server:
+  port: 8081
+
+spring:
+  application:
+    name: auth-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/campus_notes_hub_users}
+
+jwt:
+  secret: ${JWT_SECRET:campus-notes-hub-secret-key-that-is-at-least-256-bits-long-for-hs256}
+  expiration: 86400000 # 24 hours in ms

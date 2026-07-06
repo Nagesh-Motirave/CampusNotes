@@ -1,0 +1,12 @@
+server:
+  port: 8082
+
+spring:
+  application:
+    name: notes-service
+  data:
+    mongodb:
+      uri: ${MONGODB_URI:mongodb://localhost:27017/campus_notes_hub_notes}
+
+user-service:
+  url: ${USER_SERVICE_URL:http://localhost:8083}

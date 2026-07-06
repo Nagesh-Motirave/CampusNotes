@@ -1,0 +1,146 @@
+version: '3.8'
+
+services:
+  mongodb:
+    image: mongo:latest
+    container_name: mongodb
+    ports:
+      - "27017:27017"
+    volumes:
+      - mongodb_data:/data/db
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "mongosh", "--eval", "db.adminCommand('ping')"]
+      interval: 10s
+      timeout: 5s
+      retries: 5
+      start_period: 10s
+
+  api-gateway:
+    platform: linux/amd64
+    build:
+      context: ./backend/api-gateway
+      dockerfile: Dockerfile
+    container_name: api-gateway
+    ports:
+      - "8080:8080"
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
+      - JWT_SECRET=campus-notes-hub-secret-key-that-is-at-least-256-bits-long-for-hs256
+      - AUTH_SERVICE_URL=http://auth-service:8081
+      - NOTES_SERVICE_URL=http://notes-service:8082
+      - USER_SERVICE_URL=http://user-service:8083
+      - FILE_UPLOAD_SERVICE_URL=http://file-upload-service:8084
+    depends_on:
+      - auth-service
+      - notes-service
+      - user-service
+      - file-upload-service
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8080/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  auth-service:
+    platform: linux/amd64
+    build:
+      context: ./backend/auth-service
+      dockerfile: Dockerfile
+    container_name: auth-service
+    ports:
+      - "8081:8081"
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
+      - MONGODB_URI=mongodb://mongodb:27017/campus_notes_hub_users
+      - JWT_SECRET=campus-notes-hub-secret-key-that-is-at-least-256-bits-long-for-hs256
+    depends_on:
+      - mongodb
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8081/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  notes-service:
+    platform: linux/amd64
+    build:
+      context: ./backend/notes-service
+      dockerfile: Dockerfile
+    container_name: notes-service
+    ports:
+      - "8082:8082"
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
+      - MONGODB_URI=mongodb://mongodb:27017/campus_notes_hub_notes
+      - USER_SERVICE_URL=http://user-service:8083
+    depends_on:
+      - mongodb
+      - user-service
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8082/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  user-service:
+    platform: linux/amd64
+    build:
+      context: ./backend/user-service
+      dockerfile: Dockerfile
+    container_name: user-service
+    ports:
+      - "8083:8083"
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
+      - MONGODB_URI=mongodb://mongodb:27017/campus_notes_hub_users
+      - NOTES_SERVICE_URL=http://notes-service:8082
+    depends_on:
+      - mongodb
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8083/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+  file-upload-service:
+    platform: linux/amd64
+    build:
+      context: ./backend/file-upload-service
+      dockerfile: Dockerfile
+    container_name: file-upload-service
+    ports:
+      - "8084:8084"
+    environment:
+      - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
+      - CLOUDINARY_CLOUD_NAME=${CLOUDINARY_CLOUD_NAME:-}
+      - CLOUDINARY_API_KEY=${CLOUDINARY_API_KEY:-}
+      - CLOUDINARY_API_SECRET=${CLOUDINARY_API_SECRET:-}
+    networks:
+      - campus_net
+    healthcheck:
+      test: ["CMD", "curl", "-f", "http://localhost:8084/actuator/health"]
+      interval: 30s
+      timeout: 10s
+      retries: 5
+      start_period: 40s
+
+networks:
+  campus_net:
+    driver: bridge
+
+volumes:
+  mongodb_data:
