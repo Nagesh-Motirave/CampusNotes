@@ -1,4 +1,4 @@
-# Campus Notes Hub
+# CampusNotes Hub
 
 A comprehensive, production-ready full-stack web application designed for students to seamlessly share, request, and discover academic notes. Built with a modern tech stack focusing on clean design, performance, and scalability.
 
