@@ -69,5 +69,10 @@ public class UserController {
         userService.addNotification(id, message, link);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/test")
+    public String test() {
+    return "USER SERVICE WORKING";
+    }
 }
 
