@@ -2,6 +2,7 @@ package com.campusnoteshub.user.controller;
 
 import com.campusnoteshub.user.dto.LeaderboardEntry;
 import com.campusnoteshub.user.dto.UserProfileResponse;
+import com.campusnoteshub.user.repository.UserRepository;
 import com.campusnoteshub.user.service.UserService;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.ResponseEntity;
@@ -16,6 +17,9 @@ public class UserController {
 
     @Autowired
     private UserService userService;
+
+    @Autowired
+    private UserRepository userRepository;
 
     @GetMapping("/{id}/profile")
     public ResponseEntity<UserProfileResponse> getProfile(@PathVariable String id) {
@@ -34,8 +38,8 @@ public class UserController {
 
     /** Public endpoint — returns total registered user count for the hero stats section. */
     @GetMapping("/count")
-    public ResponseEntity<Map<String, Long>> getUserCount() {
-        return ResponseEntity.ok(Map.of("count", userService.getUserCount()));
+    public Long getUserCount() {
+        return userRepository.count();
     }
 
     @GetMapping("/{id}/notifications")

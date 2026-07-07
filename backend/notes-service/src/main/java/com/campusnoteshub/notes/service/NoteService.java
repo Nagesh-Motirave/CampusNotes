@@ -223,11 +223,10 @@ public class NoteService {
 
         long totalStudents = 0;
         try {
-            @SuppressWarnings("unchecked")
-            Map<String, Object> resp = restTemplate.getForObject(
-                    userServiceUrl + "/users/count", Map.class);
-            if (resp != null && resp.containsKey("count")) {
-                totalStudents = ((Number) resp.get("count")).longValue();
+            Long count = restTemplate.getForObject(
+                    userServiceUrl + "/users/count", Long.class);
+            if (count != null) {
+                totalStudents = count;
             }
         } catch (Exception e) {
             System.err.println("Could not fetch user count from user-service: " + e.getMessage());
