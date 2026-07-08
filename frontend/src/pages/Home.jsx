@@ -92,8 +92,7 @@ const Home = () => {
       if (filters.year) params.year = filters.year;
       if (filters.semester) params.semester = filters.semester;
       if (filters.subject) params.subjectName = filters.subject;
-      if (filters.college) params.university = filters.college;
-
+      if (filters.college) params.college = filters.college; // Changed from params.university to params.college
       const data = await getNotes(params);
 
       if (data.content) {
@@ -165,16 +164,6 @@ const Home = () => {
     setFilters({ year: '', semester: '', subject: '', college: '' });
   };
 
-  /** Quick‑pick a single category filter and scroll to results */
-  const handleQuickFilter = (key, value) => {
-    setFilters(prev => ({
-      year: '', semester: '', subject: '', college: '',
-      ...( key ? { [key]: value } : {} ),
-    }));
-    setTimeout(() => {
-      filteredSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
-    }, 100);
-  };
 
   // ── Build filter description title ──
   const buildFilterTitle = () => {
@@ -186,23 +175,6 @@ const Home = () => {
     return parts.join(' · ');
   };
 
-  // ── Quick category chips data ──
-  const quickCategories = [
-    { label: 'Diploma', key: 'year', value: 'Diploma', icon: '🎓' },
-    { label: 'Engineering', key: 'year', value: 'Engineering', icon: '⚙️' },
-  ];
-  const semesterChips = Array.from({ length: 8 }, (_, i) => ({
-    label: `Sem ${i + 1}`,
-    key: 'semester',
-    value: String(i + 1),
-  }));
-  const branchChips = [
-    { label: 'Computer Engg', key: 'subject', value: 'Computer Science', icon: '💻' },
-    { label: 'Electronics', key: 'subject', value: 'Electronics', icon: '🔌' },
-    { label: 'Mechanical', key: 'subject', value: 'Mechanical', icon: '🔧' },
-    { label: 'Civil', key: 'subject', value: 'Civil', icon: '🏗️' },
-    { label: 'AI / ML', key: 'subject', value: 'AI/ML', icon: '🤖' },
-  ];
 
   return (
     <div className="min-h-screen">
@@ -277,67 +249,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* ── Quick Category Chips ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Browse by Category</h3>
-        <div className="flex flex-wrap gap-2">
-          {/* Diploma / Engineering */}
-          {quickCategories.map((cat) => (
-            <button
-              key={cat.label}
-              onClick={() => handleQuickFilter(cat.key, cat.value)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
-                filters[cat.key] === cat.value
-                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
-              }`}
-              id={`chip-${cat.value.toLowerCase()}`}
-            >
-              <span>{cat.icon}</span>
-              {cat.label}
-            </button>
-          ))}
-
-          {/* Divider */}
-          <div className="w-px h-8 bg-gray-200 self-center mx-1 hidden sm:block" />
-
-          {/* Semesters */}
-          {semesterChips.map((sem) => (
-            <button
-              key={sem.label}
-              onClick={() => handleQuickFilter(sem.key, sem.value)}
-              className={`px-3.5 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
-                filters.semester === sem.value
-                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
-              }`}
-              id={`chip-sem-${sem.value}`}
-            >
-              {sem.label}
-            </button>
-          ))}
-
-          {/* Divider */}
-          <div className="w-px h-8 bg-gray-200 self-center mx-1 hidden sm:block" />
-
-          {/* Branches / Subjects */}
-          {branchChips.map((br) => (
-            <button
-              key={br.label}
-              onClick={() => handleQuickFilter(br.key, br.value)}
-              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
-                filters.subject === br.value
-                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
-                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
-              }`}
-              id={`chip-${br.value.toLowerCase().replace(/[^a-z]/g, '')}`}
-            >
-              <span>{br.icon}</span>
-              {br.label}
-            </button>
-          ))}
-        </div>
-      </section>
 
       {/* ── Filter Dropdowns ── */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
