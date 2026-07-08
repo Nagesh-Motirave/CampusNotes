@@ -34,18 +34,22 @@
   ::-webkit-scrollbar {
     width: 6px;
   }
+
   ::-webkit-scrollbar-track {
     @apply bg-gray-100;
   }
+
   ::-webkit-scrollbar-thumb {
     @apply bg-gray-300 rounded-full;
   }
+
   ::-webkit-scrollbar-thumb:hover {
     @apply bg-gray-400;
   }
 }
 
 @layer components {
+
   /* Glass morphism card */
   .glass-card {
     @apply bg-white/80 backdrop-blur-lg border border-white/20 rounded-2xl shadow-lg;
@@ -65,12 +69,10 @@
   }
 
   .gradient-hero-overlay {
-    background: linear-gradient(
-      135deg,
-      rgba(99, 102, 241, 0.9) 0%,
-      rgba(79, 70, 229, 0.85) 40%,
-      rgba(67, 56, 202, 0.9) 100%
-    );
+    background: linear-gradient(135deg,
+        rgba(99, 102, 241, 0.9) 0%,
+        rgba(79, 70, 229, 0.85) 40%,
+        rgba(67, 56, 202, 0.9) 100%);
   }
 
   /* Badge styles */
@@ -100,35 +102,24 @@
 
   /* Button base */
   .btn {
-    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm
-           transition-all duration-200 ease-out
-           focus:outline-none focus:ring-2 focus:ring-offset-2
-           disabled:opacity-50 disabled:cursor-not-allowed;
+    @apply inline-flex items-center justify-center gap-2 px-5 py-2.5 rounded-xl font-semibold text-sm transition-all duration-200 ease-out focus:outline-none focus:ring-2 focus:ring-offset-2 disabled:opacity-50 disabled:cursor-not-allowed;
   }
 
   .btn-primary {
-    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500
-           shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40
-           active:scale-[0.98];
+    @apply btn bg-primary-600 text-white hover:bg-primary-700 focus:ring-primary-500 shadow-lg shadow-primary-500/25 hover:shadow-primary-500/40 active:scale-[0.98];
   }
 
   .btn-secondary {
-    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50
-           focus:ring-primary-500
-           active:scale-[0.98];
+    @apply btn bg-white text-gray-700 border border-gray-300 hover:bg-gray-50 focus:ring-primary-500 active:scale-[0.98];
   }
 
   .btn-ghost {
-    @apply btn text-gray-600 hover:text-gray-900 hover:bg-gray-100
-           focus:ring-gray-500;
+    @apply btn text-gray-600 hover:text-gray-900 hover:bg-gray-100 focus:ring-gray-500;
   }
 
   /* Input base */
   .input-field {
-    @apply w-full px-4 py-3 rounded-xl border border-gray-300 bg-white
-           text-gray-900 placeholder-gray-400
-           focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-           transition-all duration-200;
+    @apply w-full px-4 py-3 rounded-xl border border-gray-300 bg-white text-gray-900 placeholder-gray-400 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent transition-all duration-200;
   }
 
   .dark .input-field {
@@ -153,6 +144,7 @@
 }
 
 @layer utilities {
+
   /* Text gradient utility */
   .text-gradient {
     @apply bg-clip-text text-transparent bg-gradient-to-r from-primary-500 to-purple-600;
