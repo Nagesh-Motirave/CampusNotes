@@ -3,7 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { getTopNotes, getNotes, getStats } from '../api/notes';
 import NoteCard from '../components/NoteCard';
 import FilterBar from '../components/FilterBar';
-import AdBanner from '../components/AdBanner';
+
 import { NoteGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
 
@@ -146,10 +146,6 @@ const Home = () => {
         </div>
       </section>
 
-      {/* Ad Banner — Top */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
-        <AdBanner position="top" />
-      </div>
 
       {/* Filters */}
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">

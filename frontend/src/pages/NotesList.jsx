@@ -2,7 +2,7 @@ import { useState, useEffect } from 'react';
 import { useSearchParams, useNavigate } from 'react-router-dom';
 import { getNotes, searchNotes, getDistinctValues } from '../api/notes';
 import NoteCard from '../components/NoteCard';
-import AdBanner from '../components/AdBanner';
+
 import { NoteGridSkeleton } from '../components/LoadingSkeleton';
 
 const NotesList = () => {
@@ -284,14 +284,11 @@ const NotesList = () => {
     return (
       <>
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-          {notes.map((note, idx) => {
-            const isAd = (idx + 1) % 6 === 0;
-            return (
-              <div key={note.id || note._id || idx} className={isAd ? "col-span-full" : ""}>
-                {isAd ? <AdBanner position="inline" /> : <NoteCard note={note} />}
-              </div>
-            );
-          })}
+          {notes.map((note, idx) => (
+            <div key={note.id || note._id || idx}>
+              <NoteCard note={note} />
+            </div>
+          ))}
         </div>
         {page < totalPages - 1 && (
           <div className="mt-8 flex justify-center">
