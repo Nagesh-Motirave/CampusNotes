@@ -1,5 +1,5 @@
-import { useState, useEffect } from 'react';
-import { Link, useNavigate } from 'react-router-dom';
+import { useState, useEffect, useCallback, useRef } from 'react';
+import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTopNotes, getNotes, getStats } from '../api/notes';
 import NoteCard from '../components/NoteCard';
 import FilterBar from '../components/FilterBar';
@@ -8,18 +8,44 @@ import { NoteGridSkeleton } from '../components/LoadingSkeleton';
 import { useAuth } from '../context/AuthContext';
 
 /**
- * Home Page — hero section with search, trending notes, filters, ad banners, and CTA.
+ * Home Page — hero section with search, quick category chips, inline filtering,
+ * trending notes, and CTA.
+ *
+ * Category clicks (Diploma, Engineering, Semester, Subject, Branch, University)
+ * now filter and display matching notes directly on this page instead of
+ * redirecting to the Library (/notes) route.
  */
 const Home = () => {
+  const [searchParams, setSearchParams] = useSearchParams();
+
+  // ── Initial filter state from URL (for shareable / refreshable links) ──
+  const initFilters = () => ({
+    year: searchParams.get('year') || '',
+    semester: searchParams.get('semester') || '',
+    subject: searchParams.get('subject') || '',
+    college: searchParams.get('college') || '',
+  });
+
+  // ── Core state ──
   const [trendingNotes, setTrendingNotes] = useState([]);
-  const [filteredNotes, setFilteredNotes] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
   const [loading, setLoading] = useState(true);
   const [searchQuery, setSearchQuery] = useState('');
-  const [filters, setFilters] = useState({ year: '', semester: '', subject: '', college: '' });
+  const [filters, setFilters] = useState(initFilters);
   const [stats, setStats] = useState({ totalNotes: null, totalColleges: null, totalStudents: null });
   const { isAuthenticated } = useAuth();
   const navigate = useNavigate();
+
+  // ── Filtered results state ──
+  const [filteredNotes, setFilteredNotes] = useState([]);
+  const [filterLoading, setFilterLoading] = useState(false);
+  const [filterPage, setFilterPage] = useState(0);
+  const [filterTotalPages, setFilterTotalPages] = useState(0);
+
+  const isFiltered = filters.year || filters.semester || filters.subject || filters.college;
+
+  // Ref to the filtered‑results section so we can scroll to it
+  const filteredSectionRef = useRef(null);
 
   /** Format a number as a compact string, e.g. 1234 → "1.2K+" */
   const fmtStat = (n) => {
@@ -29,16 +55,15 @@ const Home = () => {
     return `${n}+`;
   };
 
+  // ── One‑time: load trending notes + stats ──
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [topData, allData, statsData] = await Promise.all([
+        const [topData, statsData] = await Promise.all([
           getTopNotes(),
-          getNotes({ page: 0, size: 6, sort: 'latest' }),
           getStats(),
         ]);
         setTrendingNotes(Array.isArray(topData) ? topData.slice(0, 6) : []);
-        setFilteredNotes(Array.isArray(allData.content) ? allData.content : Array.isArray(allData) ? allData.slice(0, 6) : []);
         if (statsData) {
           setStats({
             totalNotes: statsData.totalNotes ?? 0,
@@ -59,6 +84,68 @@ const Home = () => {
     fetchData();
   }, []);
 
+  // ── Fetch filtered notes whenever filters change ──
+  const fetchFilteredNotes = useCallback(async (pageNum = 0, append = false) => {
+    setFilterLoading(true);
+    try {
+      const params = { page: pageNum, size: 9, sort: 'latest' };
+      if (filters.year) params.year = filters.year;
+      if (filters.semester) params.semester = filters.semester;
+      if (filters.subject) params.subjectName = filters.subject;
+      if (filters.college) params.university = filters.college;
+
+      const data = await getNotes(params);
+
+      if (data.content) {
+        setFilteredNotes(prev => append ? [...prev, ...data.content] : data.content);
+        setFilterTotalPages(data.totalPages || 1);
+      } else if (Array.isArray(data)) {
+        setFilteredNotes(prev => append ? [...prev, ...data] : data);
+        setFilterTotalPages(1);
+      } else {
+        setFilteredNotes(prev => append ? prev : []);
+        setFilterTotalPages(0);
+      }
+    } catch (err) {
+      console.error('Failed to fetch filtered notes:', err);
+      setFilteredNotes(prev => append ? prev : []);
+    } finally {
+      setFilterLoading(false);
+    }
+  }, [filters]);
+
+  // When filters change → reset page, sync URL, fetch
+  useEffect(() => {
+    if (isFiltered) {
+      setFilterPage(0);
+      fetchFilteredNotes(0, false);
+
+      // Sync filters to URL query params (without navigating)
+      const params = new URLSearchParams();
+      if (filters.year) params.set('year', filters.year);
+      if (filters.semester) params.set('semester', filters.semester);
+      if (filters.subject) params.set('subject', filters.subject);
+      if (filters.college) params.set('college', filters.college);
+      setSearchParams(params, { replace: true });
+    } else {
+      setFilteredNotes([]);
+      setFilterPage(0);
+      setFilterTotalPages(0);
+      // Clear URL params
+      setSearchParams({}, { replace: true });
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filters.year, filters.semester, filters.subject, filters.college]);
+
+  // Handle pagination (Load More)
+  useEffect(() => {
+    if (filterPage > 0) {
+      fetchFilteredNotes(filterPage, true);
+    }
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [filterPage]);
+
+  // ── Handlers ──
   const handleSearch = (e) => {
     e.preventDefault();
     if (searchQuery.trim()) {
@@ -68,10 +155,54 @@ const Home = () => {
 
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters);
-    navigate(`/notes?${new URLSearchParams(
-      Object.fromEntries(Object.entries(newFilters).filter(([, v]) => v))
-    ).toString()}`);
+    // Scroll to filtered section after a tick
+    setTimeout(() => {
+      filteredSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
   };
+
+  const handleClearFilters = () => {
+    setFilters({ year: '', semester: '', subject: '', college: '' });
+  };
+
+  /** Quick‑pick a single category filter and scroll to results */
+  const handleQuickFilter = (key, value) => {
+    setFilters(prev => ({
+      year: '', semester: '', subject: '', college: '',
+      ...( key ? { [key]: value } : {} ),
+    }));
+    setTimeout(() => {
+      filteredSectionRef.current?.scrollIntoView({ behavior: 'smooth', block: 'start' });
+    }, 100);
+  };
+
+  // ── Build filter description title ──
+  const buildFilterTitle = () => {
+    const parts = [];
+    if (filters.year) parts.push(filters.year);
+    if (filters.semester) parts.push(`Semester ${filters.semester}`);
+    if (filters.subject) parts.push(filters.subject);
+    if (filters.college) parts.push(filters.college);
+    return parts.join(' · ');
+  };
+
+  // ── Quick category chips data ──
+  const quickCategories = [
+    { label: 'Diploma', key: 'year', value: 'Diploma', icon: '🎓' },
+    { label: 'Engineering', key: 'year', value: 'Engineering', icon: '⚙️' },
+  ];
+  const semesterChips = Array.from({ length: 8 }, (_, i) => ({
+    label: `Sem ${i + 1}`,
+    key: 'semester',
+    value: String(i + 1),
+  }));
+  const branchChips = [
+    { label: 'Computer Engg', key: 'subject', value: 'Computer Science', icon: '💻' },
+    { label: 'Electronics', key: 'subject', value: 'Electronics', icon: '🔌' },
+    { label: 'Mechanical', key: 'subject', value: 'Mechanical', icon: '🔧' },
+    { label: 'Civil', key: 'subject', value: 'Civil', icon: '🏗️' },
+    { label: 'AI / ML', key: 'subject', value: 'AI/ML', icon: '🤖' },
+  ];
 
   return (
     <div className="min-h-screen">
@@ -146,50 +277,205 @@ const Home = () => {
         </div>
       </section>
 
+      {/* ── Quick Category Chips ── */}
+      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-8">
+        <h3 className="text-sm font-semibold text-gray-500 uppercase tracking-wider mb-3">Browse by Category</h3>
+        <div className="flex flex-wrap gap-2">
+          {/* Diploma / Engineering */}
+          {quickCategories.map((cat) => (
+            <button
+              key={cat.label}
+              onClick={() => handleQuickFilter(cat.key, cat.value)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
+                filters[cat.key] === cat.value
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+              }`}
+              id={`chip-${cat.value.toLowerCase()}`}
+            >
+              <span>{cat.icon}</span>
+              {cat.label}
+            </button>
+          ))}
 
-      {/* Filters */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6">
+          {/* Divider */}
+          <div className="w-px h-8 bg-gray-200 self-center mx-1 hidden sm:block" />
+
+          {/* Semesters */}
+          {semesterChips.map((sem) => (
+            <button
+              key={sem.label}
+              onClick={() => handleQuickFilter(sem.key, sem.value)}
+              className={`px-3.5 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
+                filters.semester === sem.value
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+              }`}
+              id={`chip-sem-${sem.value}`}
+            >
+              {sem.label}
+            </button>
+          ))}
+
+          {/* Divider */}
+          <div className="w-px h-8 bg-gray-200 self-center mx-1 hidden sm:block" />
+
+          {/* Branches / Subjects */}
+          {branchChips.map((br) => (
+            <button
+              key={br.label}
+              onClick={() => handleQuickFilter(br.key, br.value)}
+              className={`inline-flex items-center gap-1.5 px-4 py-2 rounded-full text-sm font-medium border transition-all duration-200 ${
+                filters.subject === br.value
+                  ? 'bg-primary-600 text-white border-primary-600 shadow-md shadow-primary-500/25'
+                  : 'bg-white text-gray-700 border-gray-200 hover:border-primary-300 hover:bg-primary-50 hover:text-primary-700'
+              }`}
+              id={`chip-${br.value.toLowerCase().replace(/[^a-z]/g, '')}`}
+            >
+              <span>{br.icon}</span>
+              {br.label}
+            </button>
+          ))}
+        </div>
+      </section>
+
+      {/* ── Filter Dropdowns ── */}
+      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-4">
         <FilterBar filters={filters} onChange={handleFiltersChange} />
       </div>
 
-      {/* Trending Notes */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold text-gray-900">🔥 Trending Notes</h2>
-            <p className="text-sm text-gray-500 mt-1">Most downloaded this week</p>
+      {/* ── Filtered Results Section (visible when any filter is active) ── */}
+      {isFiltered && (
+        <section ref={filteredSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-8">
+          {/* Filter description banner */}
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-6 p-4 bg-gradient-to-r from-primary-50 to-indigo-50 rounded-2xl border border-primary-100">
+            <div className="flex items-center gap-3">
+              <div className="w-10 h-10 rounded-xl bg-primary-100 text-primary-600 flex items-center justify-center flex-shrink-0">
+                <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+                </svg>
+              </div>
+              <div>
+                <h2 className="text-lg font-bold text-gray-900">
+                  Showing {buildFilterTitle()} Notes
+                </h2>
+                <p className="text-sm text-gray-500">
+                  {filterLoading ? 'Searching...' : `${filteredNotes.length}${filterPage < filterTotalPages - 1 ? '+' : ''} results found`}
+                </p>
+              </div>
+            </div>
+            <button
+              onClick={handleClearFilters}
+              className="inline-flex items-center gap-2 px-4 py-2 rounded-xl bg-white text-gray-700 font-medium text-sm border border-gray-200 hover:bg-red-50 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
+              id="clear-filters-btn"
+            >
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
+              </svg>
+              Clear Filters
+            </button>
           </div>
-          <Link to="/notes?sort=mostDownloaded" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors">
-            View all
-            <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
-            </svg>
-          </Link>
-        </div>
 
-        {loading ? (
-          <NoteGridSkeleton count={6} />
-        ) : trendingNotes.length > 0 ? (
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
-            {trendingNotes.map((note) => (
-              <NoteCard key={note.id || note._id} note={note} />
-            ))}
+          {/* Filtered notes grid */}
+          {filterLoading && filterPage === 0 ? (
+            <NoteGridSkeleton count={9} />
+          ) : filteredNotes.length > 0 ? (
+            <>
+              <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+                {filteredNotes.map((note) => (
+                  <NoteCard key={note.id || note._id} note={note} />
+                ))}
+              </div>
+              {filterPage < filterTotalPages - 1 && (
+                <div className="mt-8 flex justify-center">
+                  <button
+                    onClick={() => setFilterPage(p => p + 1)}
+                    disabled={filterLoading}
+                    className="inline-flex items-center gap-2 px-8 py-3 rounded-xl bg-white text-gray-700 font-semibold text-sm border border-gray-200 hover:bg-gray-50 hover:border-gray-300 transition-all shadow-sm disabled:opacity-50"
+                    id="load-more-filtered"
+                  >
+                    {filterLoading ? (
+                      <>
+                        <svg className="animate-spin w-4 h-4" fill="none" viewBox="0 0 24 24">
+                          <circle className="opacity-25" cx="12" cy="12" r="10" stroke="currentColor" strokeWidth="4" />
+                          <path className="opacity-75" fill="currentColor" d="M4 12a8 8 0 018-8V0C5.373 0 0 5.373 0 12h4zm2 5.291A7.962 7.962 0 014 12H0c0 3.042 1.135 5.824 3 7.938l3-2.647z" />
+                        </svg>
+                        Loading...
+                      </>
+                    ) : (
+                      <>
+                        Load More
+                        <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                          <path strokeLinecap="round" strokeLinejoin="round" d="M19 9l-7 7-7-7" />
+                        </svg>
+                      </>
+                    )}
+                  </button>
+                </div>
+              )}
+            </>
+          ) : (
+            <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
+              <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+                <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                  <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+                </svg>
+              </div>
+              <h3 className="text-lg font-semibold text-gray-800 mb-2">No notes found</h3>
+              <p className="text-gray-500 max-w-sm mx-auto mb-4">
+                We couldn't find notes matching your filters. Try adjusting or clearing them.
+              </p>
+              <button
+                onClick={handleClearFilters}
+                className="text-primary-600 font-medium text-sm hover:text-primary-700 transition-colors"
+              >
+                Clear all filters
+              </button>
+            </div>
+          )}
+        </section>
+      )}
+
+      {/* ── Trending Notes (hidden when filters are active) ── */}
+      {!isFiltered && (
+        <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10">
+          <div className="flex items-center justify-between mb-6">
+            <div>
+              <h2 className="text-2xl font-bold text-gray-900">🔥 Trending Notes</h2>
+              <p className="text-sm text-gray-500 mt-1">Most downloaded this week</p>
+            </div>
+            <Link to="/notes?sort=mostDownloaded" className="text-sm font-medium text-primary-600 hover:text-primary-700 flex items-center gap-1 transition-colors">
+              View all
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" />
+              </svg>
+            </Link>
           </div>
-        ) : (
-          <div className="text-center py-16">
-            <svg className="w-20 h-20 mx-auto mb-4 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
-              <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
-            </svg>
-            <h3 className="text-lg font-semibold text-gray-600 mb-2">No notes yet</h3>
-            <p className="text-gray-400 mb-4">Be the first to share your study notes!</p>
-            {isAuthenticated ? (
-              <Link to="/upload" className="btn-primary">Upload Notes</Link>
-            ) : (
-              <Link to="/register" className="btn-primary">Get Started</Link>
-            )}
-          </div>
-        )}
-      </section>
+
+          {loading ? (
+            <NoteGridSkeleton count={6} />
+          ) : trendingNotes.length > 0 ? (
+            <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-5">
+              {trendingNotes.map((note) => (
+                <NoteCard key={note.id || note._id} note={note} />
+              ))}
+            </div>
+          ) : (
+            <div className="text-center py-16">
+              <svg className="w-20 h-20 mx-auto mb-4 text-gray-200" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" />
+              </svg>
+              <h3 className="text-lg font-semibold text-gray-600 mb-2">No notes yet</h3>
+              <p className="text-gray-400 mb-4">Be the first to share your study notes!</p>
+              {isAuthenticated ? (
+                <Link to="/upload" className="btn-primary">Upload Notes</Link>
+              ) : (
+                <Link to="/register" className="btn-primary">Get Started</Link>
+              )}
+            </div>
+          )}
+        </section>
+      )}
 
       {/* Request a Note CTA */}
       <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16">
