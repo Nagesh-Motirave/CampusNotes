@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { FiEye, FiEyeOff, FiMail, FiLock, FiUser, FiBookOpen } from 'react-icons/fi';
 
 /**
  * Register Page — card-based form with name, email, password, college.
@@ -12,6 +13,8 @@ const Register = () => {
   const { register: registerUser, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
+  const [showConfirmPassword, setShowConfirmPassword] = useState(false);
 
   const {
     register,
@@ -71,17 +74,22 @@ const Register = () => {
               <label htmlFor="register-name" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Full name
               </label>
-              <input
-                id="register-name"
-                type="text"
-                autoComplete="name"
-                className={`input-field ${errors.name ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="Your full name"
-                {...register('name', {
-                  required: 'Name is required',
-                  minLength: { value: 2, message: 'Name must be at least 2 characters' },
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiUser className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="register-name"
+                  type="text"
+                  autoComplete="name"
+                  className={`input-field pl-10 ${errors.name ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="Your full name"
+                  {...register('name', {
+                    required: 'Name is required',
+                    minLength: { value: 2, message: 'Name must be at least 2 characters' },
+                  })}
+                />
+              </div>
               {errors.name && <p className="text-red-500 text-xs mt-1">{errors.name.message}</p>}
             </div>
 
@@ -90,20 +98,25 @@ const Register = () => {
               <label htmlFor="register-email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email address
               </label>
-              <input
-                id="register-email"
-                type="email"
-                autoComplete="email"
-                className={`input-field ${errors.email ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="you@college.edu"
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiMail className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="register-email"
+                  type="email"
+                  autoComplete="email"
+                  className={`input-field pl-10 ${errors.email ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="you@college.edu"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                />
+              </div>
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
@@ -112,15 +125,20 @@ const Register = () => {
               <label htmlFor="register-college" className="block text-sm font-medium text-gray-700 mb-1.5">
                 College name
               </label>
-              <input
-                id="register-college"
-                type="text"
-                className={`input-field ${errors.college ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="e.g. VJTI Mumbai"
-                {...register('college', {
-                  required: 'College name is required',
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiBookOpen className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="register-college"
+                  type="text"
+                  className={`input-field pl-10 ${errors.college ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="e.g. VJTI Mumbai"
+                  {...register('college', {
+                    required: 'College name is required',
+                  })}
+                />
+              </div>
               {errors.college && <p className="text-red-500 text-xs mt-1">{errors.college.message}</p>}
             </div>
 
@@ -129,17 +147,32 @@ const Register = () => {
               <label htmlFor="register-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
-              <input
-                id="register-password"
-                type="password"
-                autoComplete="new-password"
-                className={`input-field ${errors.password ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="Min 6 characters"
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: { value: 6, message: 'Password must be at least 6 characters' },
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiLock className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="register-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className={`input-field pl-10 pr-11 ${errors.password ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="Min 6 characters"
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: { value: 6, message: 'Password must be at least 6 characters' },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  id="register-toggle-password"
+                >
+                  {showPassword ? <FiEyeOff className="w-4.5 h-4.5" /> : <FiEye className="w-4.5 h-4.5" />}
+                </button>
+              </div>
               {errors.password && <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>}
             </div>
 
@@ -148,17 +181,32 @@ const Register = () => {
               <label htmlFor="register-confirm" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Confirm password
               </label>
-              <input
-                id="register-confirm"
-                type="password"
-                autoComplete="new-password"
-                className={`input-field ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="Repeat your password"
-                {...register('confirmPassword', {
-                  required: 'Please confirm your password',
-                  validate: (val) => val === watch('password') || 'Passwords do not match',
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiLock className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="register-confirm"
+                  type={showConfirmPassword ? 'text' : 'password'}
+                  autoComplete="new-password"
+                  className={`input-field pl-10 pr-11 ${errors.confirmPassword ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="Repeat your password"
+                  {...register('confirmPassword', {
+                    required: 'Please confirm your password',
+                    validate: (val) => val === watch('password') || 'Passwords do not match',
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowConfirmPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showConfirmPassword ? 'Hide confirm password' : 'Show confirm password'}
+                  id="register-toggle-confirm-password"
+                >
+                  {showConfirmPassword ? <FiEyeOff className="w-4.5 h-4.5" /> : <FiEye className="w-4.5 h-4.5" />}
+                </button>
+              </div>
               {errors.confirmPassword && <p className="text-red-500 text-xs mt-1">{errors.confirmPassword.message}</p>}
             </div>
 

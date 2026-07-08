@@ -8,6 +8,7 @@ import ProtectedRoute from './components/ProtectedRoute';
 import Home from './pages/Home';
 import Login from './pages/Login';
 import Register from './pages/Register';
+import ForgotPassword from './pages/ForgotPassword';
 import NotesList from './pages/NotesList';
 import NoteDetail from './pages/NoteDetail';
 import UploadNote from './pages/UploadNote';
@@ -31,6 +32,7 @@ function App() {
               <Route path="/" element={<Home />} />
               <Route path="/login" element={<Login />} />
               <Route path="/register" element={<Register />} />
+              <Route path="/forgot-password" element={<ForgotPassword />} />
               <Route path="/notes" element={<NotesList />} />
               <Route path="/notes/:id" element={<NoteDetail />} />
               <Route path="/requests" element={<RequestsPage />} />

@@ -3,6 +3,7 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
+import { FiEye, FiEyeOff, FiMail, FiLock } from 'react-icons/fi';
 
 /**
  * Login Page — card-based form with email/password, React Hook Form validation.
@@ -12,6 +13,7 @@ const Login = () => {
   const { login, isAuthenticated } = useAuth();
   const navigate = useNavigate();
   const [loading, setLoading] = useState(false);
+  const [showPassword, setShowPassword] = useState(false);
 
   const {
     register,
@@ -69,20 +71,25 @@ const Login = () => {
               <label htmlFor="login-email" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Email address
               </label>
-              <input
-                id="login-email"
-                type="email"
-                autoComplete="email"
-                className={`input-field ${errors.email ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="you@college.edu"
-                {...register('email', {
-                  required: 'Email is required',
-                  pattern: {
-                    value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
-                    message: 'Invalid email address',
-                  },
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiMail className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="login-email"
+                  type="email"
+                  autoComplete="email"
+                  className={`input-field pl-10 ${errors.email ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="you@college.edu"
+                  {...register('email', {
+                    required: 'Email is required',
+                    pattern: {
+                      value: /^[A-Z0-9._%+-]+@[A-Z0-9.-]+\.[A-Z]{2,}$/i,
+                      message: 'Invalid email address',
+                    },
+                  })}
+                />
+              </div>
               {errors.email && (
                 <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>
               )}
@@ -93,23 +100,49 @@ const Login = () => {
               <label htmlFor="login-password" className="block text-sm font-medium text-gray-700 mb-1.5">
                 Password
               </label>
-              <input
-                id="login-password"
-                type="password"
-                autoComplete="current-password"
-                className={`input-field ${errors.password ? 'border-red-400 focus:ring-red-500' : ''}`}
-                placeholder="••••••••"
-                {...register('password', {
-                  required: 'Password is required',
-                  minLength: {
-                    value: 6,
-                    message: 'Password must be at least 6 characters',
-                  },
-                })}
-              />
+              <div className="relative">
+                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
+                  <FiLock className="w-4.5 h-4.5 text-gray-400" />
+                </div>
+                <input
+                  id="login-password"
+                  type={showPassword ? 'text' : 'password'}
+                  autoComplete="current-password"
+                  className={`input-field pl-10 pr-11 ${errors.password ? 'border-red-400 focus:ring-red-500' : ''}`}
+                  placeholder="••••••••"
+                  {...register('password', {
+                    required: 'Password is required',
+                    minLength: {
+                      value: 6,
+                      message: 'Password must be at least 6 characters',
+                    },
+                  })}
+                />
+                <button
+                  type="button"
+                  onClick={() => setShowPassword((prev) => !prev)}
+                  className="absolute inset-y-0 right-0 pr-3.5 flex items-center text-gray-400 hover:text-gray-600 transition-colors"
+                  tabIndex={-1}
+                  aria-label={showPassword ? 'Hide password' : 'Show password'}
+                  id="login-toggle-password"
+                >
+                  {showPassword ? <FiEyeOff className="w-4.5 h-4.5" /> : <FiEye className="w-4.5 h-4.5" />}
+                </button>
+              </div>
               {errors.password && (
                 <p className="text-red-500 text-xs mt-1">{errors.password.message}</p>
               )}
+
+              {/* Forgot Password Link */}
+              <div className="flex justify-end mt-1.5">
+                <Link
+                  to="/forgot-password"
+                  className="text-xs text-primary-600 hover:text-primary-700 font-medium transition-colors"
+                  id="forgot-password-link"
+                >
+                  Forgot Password?
+                </Link>
+              </div>
             </div>
 
             {/* Submit */}
