@@ -8,7 +8,7 @@ const FilterBar = ({ filters, onChange }) => {
   const subjects = [
     'All Subjects', 'Mathematics', 'Physics', 'Chemistry', 'Computer Science',
     'Electronics', 'Mechanical', 'Civil', 'Electrical', 'DBMS', 'OS',
-    'Data Structures', 'Networking', 'Software Engineering', 'AI/ML',
+    'Data Structure', 'Networking', 'Software Engineering', 'AI/ML',
   ];
 
   const handleChange = (key, value) => {
