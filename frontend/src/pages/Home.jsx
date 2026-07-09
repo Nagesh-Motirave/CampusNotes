@@ -30,7 +30,6 @@ const Home = () => {
   const [trendingNotes, setTrendingNotes] = useState([]);
   const [recentNotes, setRecentNotes] = useState([]);
   const [loading, setLoading] = useState(true);
-  const [searchQuery, setSearchQuery] = useState('');
   const [filters, setFilters] = useState(initFilters);
   const [stats, setStats] = useState({ totalNotes: null, totalColleges: null, totalStudents: null });
   const { isAuthenticated } = useAuth();
@@ -145,13 +144,6 @@ const Home = () => {
   }, [filterPage]);
 
   // ── Handlers ──
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
-    }
-  };
-
   const handleFiltersChange = (newFilters) => {
     setFilters(newFilters);
     // Scroll to filtered section after a tick
@@ -210,26 +202,6 @@ const Home = () => {
               <p className="text-lg md:text-xl text-white/80 mb-8 animate-slide-up" style={{ animationDelay: '0.1s' }}>
                 Your one-stop platform for sharing and discovering quality study notes from colleges across India.
               </p>
-
-              {/* Search Bar */}
-              <form onSubmit={handleSearch} className="max-w-xl mx-auto animate-slide-up" style={{ animationDelay: '0.2s' }}>
-                <div className="relative flex">
-                  <input
-                    type="text"
-                    value={searchQuery}
-                    onChange={(e) => setSearchQuery(e.target.value)}
-                    placeholder="Search notes by subject, topic, or college..."
-                    className="flex-1 px-6 py-4 rounded-2xl bg-white/95 backdrop-blur-sm text-gray-900 placeholder-gray-400 text-base focus:outline-none focus:ring-4 focus:ring-white/30 shadow-2xl"
-                    id="hero-search"
-                  />
-                  <button
-                    type="submit"
-                    className="absolute right-2 top-1/2 -translate-y-1/2 px-5 py-2.5 rounded-xl bg-primary-600 text-white font-semibold text-sm hover:bg-primary-700 transition-colors shadow-lg"
-                  >
-                    Search
-                  </button>
-                </div>
-              </form>
 
               {/* Quick stats */}
               <div className="flex items-center justify-center gap-8 mt-10 animate-slide-up" style={{ animationDelay: '0.3s' }}>
