@@ -124,7 +124,7 @@ const Home = () => {
       const params = { page: pageNum, size: 9, sort: 'latest' };
       if (filters.year) params.year = filters.year;
       if (filters.semester) params.semester = filters.semester;
-      if (filters.subject) params.subjectName = filters.subject;
+      if (filters.subject) params.subject = filters.subject;
       const data = await getNotes(params);
 
       if (data.content) {
