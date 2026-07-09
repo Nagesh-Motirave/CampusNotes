@@ -100,14 +100,25 @@ public class NoteService {
     public Page<Note> getNotes(String university, String branch, String year, Integer semester, String subjectName, String resourceType, String subject, String college, String uploaderId, String likedByUserId, int page, int size, String sort) {
         Query query = new Query();
 
-        if (university != null && !university.isEmpty()) query.addCriteria(Criteria.where("university").is(university));
-        if (branch != null && !branch.isEmpty()) query.addCriteria(Criteria.where("branch").is(branch));
-        if (year != null && !year.isEmpty()) query.addCriteria(Criteria.where("year").is(year));
+        if (university != null && !university.isEmpty()) query.addCriteria(Criteria.where("university").regex(university, "i"));
+        if (branch != null && !branch.isEmpty()) query.addCriteria(Criteria.where("branch").regex(branch, "i"));
+        if (year != null && !year.isEmpty()) {
+            query.addCriteria(new Criteria().orOperator(
+                    Criteria.where("year").regex(year, "i"),
+                    Criteria.where("branch").regex(year, "i"),
+                    Criteria.where("university").regex(year, "i")
+            ));
+        }
         if (semester != null) query.addCriteria(Criteria.where("semester").is(semester));
-        if (subjectName != null && !subjectName.isEmpty()) query.addCriteria(Criteria.where("subjectName").is(subjectName));
-        if (resourceType != null && !resourceType.isEmpty()) query.addCriteria(Criteria.where("resourceType").is(resourceType));
-        if (subject != null && !subject.isEmpty()) query.addCriteria(Criteria.where("subject").is(subject));
-        if (college != null && !college.isEmpty()) query.addCriteria(Criteria.where("college").is(college));
+        if (subjectName != null && !subjectName.isEmpty()) query.addCriteria(Criteria.where("subjectName").regex(subjectName, "i"));
+        if (resourceType != null && !resourceType.isEmpty()) query.addCriteria(Criteria.where("resourceType").regex(resourceType, "i"));
+        if (subject != null && !subject.isEmpty()) {
+            query.addCriteria(new Criteria().orOperator(
+                    Criteria.where("subject").regex(subject, "i"),
+                    Criteria.where("subjectName").regex(subject, "i")
+            ));
+        }
+        if (college != null && !college.isEmpty()) query.addCriteria(Criteria.where("college").regex(college, "i"));
         if (uploaderId != null && !uploaderId.isEmpty()) query.addCriteria(Criteria.where("uploadedBy").is(uploaderId));
         if (likedByUserId != null && !likedByUserId.isEmpty()) query.addCriteria(Criteria.where("likes").is(likedByUserId));
 
