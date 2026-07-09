@@ -22,6 +22,7 @@ const NoteDetail = () => {
   const [downloading, setDownloading] = useState(false);
   const [pdfUrl, setPdfUrl] = useState(null);
   const [pdfError, setPdfError] = useState(false);
+  const isMobile = /Android|webOS|iPhone|iPad|iPod|BlackBerry|IEMobile|Opera Mini/i.test(navigator.userAgent);
   
   // New features state
   const [completed, setCompleted] = useState(false);
@@ -318,7 +319,7 @@ const NoteDetail = () => {
             ) : note.fileType === 'pdf' ? (
               pdfUrl ? (
                 <iframe
-                  src={pdfUrl}
+                  src={isMobile ? `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true` : pdfUrl}
                   className="w-full h-[600px] border-0"
                   title={note.title}
                 />
