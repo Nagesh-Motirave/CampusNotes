@@ -196,8 +196,31 @@ public class NoteService {
     }
 
     public Page<Note> searchNotes(String query, int page, int size, String userId) {
-        Page<Note> results = noteRepository.searchByTitleOrSubject(
-                query, PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt")));
+        Pageable pageable = PageRequest.of(page, size, Sort.by(Sort.Direction.DESC, "createdAt"));
+        Query mongoQuery = new Query();
+        mongoQuery.addCriteria(Criteria.where("archived").is(false));
+        
+        if (query != null && !query.trim().isEmpty()) {
+            String[] keywords = query.trim().split("\\s+");
+            List<Criteria> keywordCriterias = new java.util.ArrayList<>();
+            
+            for (String keyword : keywords) {
+                Criteria keywordCriteria = new Criteria().orOperator(
+                    Criteria.where("title").regex(keyword, "i"),
+                    Criteria.where("subject").regex(keyword, "i"),
+                    Criteria.where("subjectName").regex(keyword, "i"),
+                    Criteria.where("branch").regex(keyword, "i"),
+                    Criteria.where("university").regex(keyword, "i")
+                );
+                keywordCriterias.add(keywordCriteria);
+            }
+            mongoQuery.addCriteria(new Criteria().andOperator(keywordCriterias.toArray(new Criteria[0])));
+        }
+        
+        mongoQuery.with(pageable);
+        long total = mongoTemplate.count(mongoQuery, Note.class);
+        List<Note> notes = mongoTemplate.find(mongoQuery, Note.class);
+        Page<Note> results = new PageImpl<>(notes, pageable, total);
 
         if (query != null && !query.isBlank()) {
             try {

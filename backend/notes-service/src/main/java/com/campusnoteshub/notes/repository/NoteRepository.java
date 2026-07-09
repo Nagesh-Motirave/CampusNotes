@@ -12,8 +12,9 @@ import java.util.List;
 @Repository
 public interface NoteRepository extends MongoRepository<Note, String> {
     
-    @Query("{ '$and': [ { 'archived': false }, { '$or': [ { 'title': { $regex: ?0, $options: 'i' } }, { 'subject': { $regex: ?0, $options: 'i' } }, { 'subjectName': { $regex: ?0, $options: 'i' } }, { 'branch': { $regex: ?0, $options: 'i' } }, { 'university': { $regex: ?0, $options: 'i' } } ] } ] }")
-    Page<Note> searchByTitleOrSubject(String query, Pageable pageable);
+    // Deprecated: Using custom dynamic query in NoteService for AI search
+    // @Query("{ '$and': [ { 'archived': false }, { '$or': [ { 'title': { $regex: ?0, $options: 'i' } }, { 'subject': { $regex: ?0, $options: 'i' } }, { 'subjectName': { $regex: ?0, $options: 'i' } }, { 'branch': { $regex: ?0, $options: 'i' } }, { 'university': { $regex: ?0, $options: 'i' } } ] } ] }")
+    // Page<Note> searchByTitleOrSubject(String query, Pageable pageable);
 
     List<Note> findTop6ByArchivedFalseOrderByDownloadsDesc();
     List<Note> findTop6ByArchivedFalseOrderByLikesCountDesc();
