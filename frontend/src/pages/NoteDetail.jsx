@@ -319,7 +319,7 @@ const NoteDetail = () => {
             ) : note.fileType === 'pdf' ? (
               pdfUrl ? (
                 <iframe
-                  src={isMobile ? `https://docs.google.com/gview?url=${encodeURIComponent(pdfUrl)}&embedded=true` : pdfUrl}
+                  src={isMobile ? `https://docs.google.com/gview?url=${encodeURIComponent(note.fileUrl)}&embedded=true` : pdfUrl}
                   className="w-full h-[600px] border-0"
                   title={note.title}
                 />
