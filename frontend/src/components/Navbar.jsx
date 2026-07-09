@@ -105,7 +105,7 @@ const Navbar = () => {
         <div className="flex items-center justify-between h-16">
           {/* Logo */}
           <Link to="/" className="flex items-center gap-2 group">
-            <img src="/logo.png" alt="Campus Notes Hub" className="w-10 h-10 object-contain drop-shadow-md group-hover:drop-shadow-lg transition-all" />
+            <img src="/logo.jpg" alt="Campus Notes Hub" className="w-10 h-10 object-contain drop-shadow-md group-hover:drop-shadow-lg transition-all" />
             <span className="text-lg font-bold text-gray-900 hidden sm:block">
               Campus<span className="text-primary-600">Notes</span>
             </span>
