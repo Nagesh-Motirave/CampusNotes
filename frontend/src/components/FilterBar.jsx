@@ -64,20 +64,10 @@ const FilterBar = ({ filters, onChange }) => {
         ))}
       </select>
 
-      {/* College text input */}
-      <input
-        type="text"
-        value={filters.college || ''}
-        onChange={(e) => onChange({ ...filters, college: e.target.value })}
-        placeholder="Filter by college..."
-        className="border border-gray-200 rounded-xl px-4 py-2.5 text-sm text-gray-700 focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent hover:border-gray-300 transition-all w-full sm:w-48"
-        id="filter-college"
-      />
-
       {/* Clear filters */}
-      {(filters.year || filters.semester || filters.subject || filters.college) && (
+      {(filters.year || filters.semester || filters.subject) && (
         <button
-          onClick={() => onChange({ year: '', semester: '', subject: '', college: '' })}
+          onClick={() => onChange({ year: '', semester: '', subject: '' })}
           className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
         >
           <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>

@@ -14,7 +14,6 @@ const Home = () => {
     year: searchParams.get('year') || '',
     semester: searchParams.get('semester') || '',
     subject: searchParams.get('subject') || '',
-    college: searchParams.get('college') || '',
   });
 
   // ── Core state ──
@@ -32,7 +31,7 @@ const Home = () => {
   const [filterPage, setFilterPage] = useState(0);
   const [filterTotalPages, setFilterTotalPages] = useState(0);
 
-  const isFiltered = filters.year || filters.semester || filters.subject || filters.college;
+  const isFiltered = filters.year || filters.semester || filters.subject;
   const filteredSectionRef = useRef(null);
 
   // ── Search & Autocomplete State ──
@@ -126,7 +125,6 @@ const Home = () => {
       if (filters.year) params.year = filters.year;
       if (filters.semester) params.semester = filters.semester;
       if (filters.subject) params.subjectName = filters.subject;
-      if (filters.college) params.college = filters.college; 
       const data = await getNotes(params);
 
       if (data.content) {
@@ -155,7 +153,6 @@ const Home = () => {
       if (filters.year) params.set('year', filters.year);
       if (filters.semester) params.set('semester', filters.semester);
       if (filters.subject) params.set('subject', filters.subject);
-      if (filters.college) params.set('college', filters.college);
       setSearchParams(params, { replace: true });
     } else {
       setFilteredNotes([]);
@@ -163,7 +160,7 @@ const Home = () => {
       setFilterTotalPages(0);
       setSearchParams({}, { replace: true });
     }
-  }, [filters.year, filters.semester, filters.subject, filters.college]);
+  }, [filters.year, filters.semester, filters.subject]);
 
   useEffect(() => {
     if (filterPage > 0) {
@@ -180,7 +177,7 @@ const Home = () => {
   };
 
   const handleClearFilters = () => {
-    setFilters({ year: '', semester: '', subject: '', college: '' });
+    setFilters({ year: '', semester: '', subject: '' });
   };
 
   const handleSearchSubmit = (e, explicitQuery = null) => {
@@ -200,7 +197,6 @@ const Home = () => {
     if (filters.year) parts.push(filters.year);
     if (filters.semester) parts.push(`Semester ${filters.semester}`);
     if (filters.subject) parts.push(filters.subject);
-    if (filters.college) parts.push(filters.college);
     return parts.join(' · ');
   };
 
@@ -294,7 +290,7 @@ const Home = () => {
                             </div>
                             <div className="overflow-hidden flex-1">
                               <h4 className="text-gray-900 dark:text-white font-semibold truncate group-hover:text-primary-600 transition-colors">{note.title}</h4>
-                              <p className="text-xs text-gray-500 truncate">{note.subject} • {note.college}</p>
+                              <p className="text-xs text-gray-500 truncate">{note.subject}</p>
                             </div>
                           </Link>
                         ))

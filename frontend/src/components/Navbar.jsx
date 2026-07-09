@@ -148,7 +148,7 @@ const Navbar = () => {
                           className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0"
                         >
                           <p className="text-sm font-semibold text-gray-900 truncate">{note.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{note.subject} • {note.college}</p>
+                          <p className="text-xs text-gray-500 truncate">{note.subject}</p>
                         </Link>
                       ))}
                     </div>
