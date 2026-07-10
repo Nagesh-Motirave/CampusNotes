@@ -11,6 +11,9 @@ import org.springframework.http.HttpMethod;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
@@ -24,6 +27,9 @@ public class UserService {
 
     @Autowired
     private RestTemplate restTemplate;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Value("${notes-service.url}")
     private String notesServiceUrl;
@@ -73,6 +79,13 @@ public class UserService {
     /** Returns the total number of registered users (active students). */
     public long getUserCount() {
         return userRepository.count();
+    }
+
+    public long getCollegesCount() {
+        Query query = new Query();
+        query.addCriteria(Criteria.where("college").exists(true).ne("").ne(null));
+        List<String> colleges = mongoTemplate.findDistinct(query, "college", User.class, String.class);
+        return colleges.size();
     }
 
     public void addPoints(String userId, int points, String description) {

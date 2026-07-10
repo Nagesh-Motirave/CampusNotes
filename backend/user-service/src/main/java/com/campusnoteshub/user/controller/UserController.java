@@ -42,6 +42,11 @@ public class UserController {
         return userRepository.count();
     }
 
+    @GetMapping("/colleges/count")
+    public Long getCollegesCount() {
+        return userService.getCollegesCount();
+    }
+
     @GetMapping("/{id}/notifications")
     public ResponseEntity<List<com.campusnoteshub.user.model.User.Notification>> getNotifications(@PathVariable String id) {
         return ResponseEntity.ok(userService.getNotifications(id));

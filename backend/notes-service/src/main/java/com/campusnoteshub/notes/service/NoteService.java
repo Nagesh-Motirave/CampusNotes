@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
+import org.springframework.web.util.UriComponentsBuilder;
 
 import java.util.List;
 import java.util.Map;
@@ -90,8 +91,12 @@ public class NoteService {
 
     private void sendNotification(String userId, String message, String link) {
         try {
-            String url = userServiceUrl + "/users/internal/" + userId + "/notifications?message=" + message + (link != null ? "&link=" + link : "");
-            restTemplate.postForEntity(url, null, Void.class);
+            UriComponentsBuilder builder = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/notifications")
+                    .queryParam("message", message);
+            if (link != null) {
+                builder.queryParam("link", link);
+            }
+            restTemplate.postForEntity(builder.toUriString(), null, Void.class);
         } catch (Exception e) {
             System.err.println("Failed to send notification to user " + userId + ": " + e.getMessage());
         }
@@ -248,12 +253,16 @@ public class NoteService {
     public StatsResponse getStats() {
         long totalNotes = noteRepository.count();
 
-        long distinctColleges = noteRepository.findAllCollegeFields()
-                .stream()
-                .map(Note::getCollege)
-                .filter(c -> c != null && !c.isBlank())
-                .distinct()
-                .count();
+        long distinctColleges = 0;
+        try {
+            Long count = restTemplate.getForObject(
+                    userServiceUrl + "/users/colleges/count", Long.class);
+            if (count != null) {
+                distinctColleges = count;
+            }
+        } catch (Exception e) {
+            System.err.println("Could not fetch distinct colleges count from user-service: " + e.getMessage());
+        }
 
         long totalStudents = 0;
         try {
@@ -299,7 +308,10 @@ public class NoteService {
     private void awardPoints(String userId, int points, String description) {
         try {
             // Internal call to user-service
-            String url = userServiceUrl + "/users/internal/" + userId + "/points?points=" + points + "&desc=" + description;
+            String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points")
+                    .queryParam("points", points)
+                    .queryParam("desc", description)
+                    .toUriString();
             restTemplate.postForEntity(url, null, Void.class);
         } catch (Exception e) {
             System.err.println("Failed to award points to user " + userId + ": " + e.getMessage());

@@ -312,7 +312,7 @@ const Home = () => {
             <div className="flex items-center justify-center gap-8 mt-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
               {[
                 { label: 'Notes Shared',    value: fmtStat(stats.totalNotes)    },
-                { label: 'Active Students', value: fmtStat(stats.totalStudents) },
+                { label: 'Total Students', value: fmtStat(stats.totalStudents) },
                 { label: 'Colleges',        value: fmtStat(stats.totalColleges) },
               ].map((stat) => (
                 <div key={stat.label} className="text-center">
