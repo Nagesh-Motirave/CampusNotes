@@ -69,8 +69,7 @@ public class NoteService {
 
         Note savedNote = noteRepository.save(note);
         
-        // Award 10 points for upload via user-service
-        awardPoints(userId, 10, "Uploaded note: " + note.getTitle());
+        // Note: Points are now awarded upon admin approval, not upload.
 
         // Auto-fulfill matching requests and notify
         List<NoteRequest> openRequests = noteRequestRepository.findByFulfilledFalseOrderByCreatedAtDesc();
@@ -247,39 +246,17 @@ public class NoteService {
     }
 
     /**
-     * Returns platform-level stats: real note count, distinct college count,
-     * and total registered students fetched from user-service.
+     * Returns platform-level stats: real note count.
+     * College and student counts are now fetched directly by the frontend to avoid inter-service dependencies.
      */
     public StatsResponse getStats() {
         long totalNotes = noteRepository.count();
-
-        long distinctColleges = 0;
-        try {
-            Long count = restTemplate.getForObject(
-                    userServiceUrl + "/users/colleges/count", Long.class);
-            if (count != null) {
-                distinctColleges = count;
-            }
-        } catch (Exception e) {
-            System.err.println("Could not fetch distinct colleges count from user-service: " + e.getMessage());
-        }
-
-        long totalStudents = 0;
-        try {
-            Long count = restTemplate.getForObject(
-                    userServiceUrl + "/users/count", Long.class);
-            if (count != null) {
-                totalStudents = count;
-            }
-        } catch (Exception e) {
-            System.err.println("Could not fetch user count from user-service: " + e.getMessage());
-        }
-
-        return new StatsResponse(totalNotes, distinctColleges, totalStudents);
+        return new StatsResponse(totalNotes, 0, 0);
     }
 
     public Map<String, Object> getUserStats(String userId) {
-        Query query = new Query(Criteria.where("uploadedBy").is(userId));
+        // Only count verified (approved) notes for stats and points
+        Query query = new Query(Criteria.where("uploadedBy").is(userId).and("verified").is(true));
         List<Note> userNotes = mongoTemplate.find(query, Note.class);
         
         long notesUploaded = userNotes.size();
@@ -303,8 +280,8 @@ public class NoteService {
             long likes = (long) stats.get("totalLikes");
             long downloads = (long) stats.get("totalDownloads");
             
-            // Calculate points: 10 per upload, 3 per 5 likes, 5 per 10 downloads
-            int totalPoints = (int) (uploaded * 10 + (likes / 5) * 3 + (downloads / 10) * 5);
+            // Calculate points: 5 per approved upload, 3 per 5 likes, 5 per 10 downloads
+            int totalPoints = (int) (uploaded * 5 + (likes / 5) * 3 + (downloads / 10) * 5);
             
             try {
                 String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
@@ -344,7 +321,7 @@ public class NoteService {
         return noteRequestRepository.save(req);
     }
 
-    private void awardPoints(String userId, int points, String description) {
+    public void awardPoints(String userId, int points, String description) {
         try {
             // Internal call to user-service
             String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points")

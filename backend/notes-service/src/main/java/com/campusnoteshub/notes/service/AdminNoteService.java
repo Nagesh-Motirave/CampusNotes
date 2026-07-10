@@ -39,6 +39,9 @@ public class AdminNoteService {
     @Autowired
     private MongoTemplate mongoTemplate;
 
+    @Autowired
+    private NoteService noteService;
+
     /**
      * Overview stats: total uploads, total downloads, pending approvals, open requests.
      */
@@ -327,11 +330,17 @@ public class AdminNoteService {
 
     /**
      * Approve a note (set verified=true).
+     * Awards 5 points to the uploader.
      */
     public Note approveNote(String noteId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
-        note.setVerified(true);
+        
+        if (!note.isVerified()) {
+            note.setVerified(true);
+            noteService.awardPoints(note.getUploadedBy(), 5, "Your note '" + note.getTitle() + "' was approved!");
+        }
+        
         return noteRepository.save(note);
     }
 

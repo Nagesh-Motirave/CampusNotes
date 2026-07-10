@@ -1,6 +1,7 @@
 import { useState, useEffect, useCallback, useRef } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTopNotes, getNotes, getStats, searchNotes } from '../api/notes';
+import { getStudentsCount, getCollegesCount } from '../api/users';
 import NoteCard from '../components/NoteCard';
 import FilterBar from '../components/FilterBar';
 import { NoteGridSkeleton } from '../components/LoadingSkeleton';
@@ -93,21 +94,21 @@ const Home = () => {
   useEffect(() => {
     const fetchData = async () => {
       try {
-        const [topData, statsData, recentData] = await Promise.all([
+        const [topData, statsData, recentData, studentsCount, collegesCount] = await Promise.all([
           getTopNotes(),
           getStats(),
-          getNotes({ size: 6, sort: 'latest' })
+          getNotes({ size: 6, sort: 'latest' }),
+          getStudentsCount().catch(() => 0),
+          getCollegesCount().catch(() => 0)
         ]);
         setTrendingNotes(Array.isArray(topData) ? topData.slice(0, 6) : []);
         setRecentNotes(recentData.content ? recentData.content.slice(0, 6) : []);
         
-        if (statsData) {
-          setStats({
-            totalNotes: statsData.totalNotes ?? 0,
-            totalColleges: statsData.totalColleges ?? 0,
-            totalStudents: statsData.totalStudents ?? 0,
-          });
-        }
+        setStats({
+          totalNotes: statsData?.totalNotes ?? 0,
+          totalColleges: collegesCount ?? 0,
+          totalStudents: studentsCount ?? 0,
+        });
       } catch (err) {
         console.error('Failed to fetch notes:', err);
       } finally {

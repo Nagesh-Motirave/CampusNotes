@@ -21,6 +21,16 @@ export const getLeaderboard = async () => {
   return response.data;
 };
 
+export const getStudentsCount = async () => {
+  const response = await api.get('/users/count');
+  return response.data;
+};
+
+export const getCollegesCount = async () => {
+  const response = await api.get('/users/colleges/count');
+  return response.data;
+};
+
 // --- Notifications ---
 
 export const getNotifications = async (userId) => {
