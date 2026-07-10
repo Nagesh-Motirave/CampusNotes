@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Query;
 
 import java.time.LocalDateTime;
 import java.util.List;
+import java.util.Map;
 import java.util.stream.Collectors;
 
 @Service
@@ -38,10 +39,20 @@ public class UserService {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
 
-        // Fetch stats from notes-service (mocked for now to avoid complex DTOs, but ideally we'd call an endpoint)
-        // Since we didn't create a stats endpoint in notes-service yet, we'll just return placeholder stats or compute them
-        // For simplicity, let's just initialize stats as 0. In a real scenario, we'd add an endpoint in notes-service to get these stats.
         UserProfileResponse.UserStats stats = new UserProfileResponse.UserStats(0, 0, 0);
+        try {
+            Map<String, Integer> userStats = restTemplate.getForObject(
+                    notesServiceUrl + "/notes/users/" + userId + "/stats", Map.class);
+            if (userStats != null) {
+                stats = new UserProfileResponse.UserStats(
+                    userStats.getOrDefault("notesUploaded", 0),
+                    userStats.getOrDefault("totalLikes", 0),
+                    userStats.getOrDefault("totalDownloads", 0)
+                );
+            }
+        } catch (Exception e) {
+            System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
+        }
 
         return new UserProfileResponse(
                 user.getId(),
@@ -95,6 +106,13 @@ public class UserService {
         user.setPoints(user.getPoints() + points);
         user.addActivity(new User.ActivityLog(points, description, LocalDateTime.now()));
         
+        userRepository.save(user);
+    }
+
+    public void setPoints(String userId, int points) {
+        User user = userRepository.findById(userId)
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPoints(points);
         userRepository.save(user);
     }
 

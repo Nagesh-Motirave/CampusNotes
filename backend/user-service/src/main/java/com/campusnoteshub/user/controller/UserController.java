@@ -67,6 +67,13 @@ public class UserController {
         return ResponseEntity.ok().build();
     }
 
+    @PostMapping("/internal/{id}/points/set")
+    public ResponseEntity<Void> setPoints(@PathVariable String id, 
+                                          @RequestParam int points) {
+        userService.setPoints(id, points);
+        return ResponseEntity.ok().build();
+    }
+
     @PostMapping("/internal/{id}/notifications")
     public ResponseEntity<Void> addNotification(@PathVariable String id,
                                                 @RequestParam String message,

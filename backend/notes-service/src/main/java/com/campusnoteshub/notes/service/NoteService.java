@@ -278,6 +278,45 @@ public class NoteService {
         return new StatsResponse(totalNotes, distinctColleges, totalStudents);
     }
 
+    public Map<String, Object> getUserStats(String userId) {
+        Query query = new Query(Criteria.where("uploadedBy").is(userId));
+        List<Note> userNotes = mongoTemplate.find(query, Note.class);
+        
+        long notesUploaded = userNotes.size();
+        long totalLikes = userNotes.stream().mapToLong(Note::getLikesCount).sum();
+        long totalDownloads = userNotes.stream().mapToLong(Note::getDownloads).sum();
+        
+        Map<String, Object> stats = new java.util.HashMap<>();
+        stats.put("notesUploaded", notesUploaded);
+        stats.put("totalLikes", totalLikes);
+        stats.put("totalDownloads", totalDownloads);
+        return stats;
+    }
+
+    public void recalculateAllPoints() {
+        // Find all distinct uploaders
+        List<String> uploaders = mongoTemplate.findDistinct(new Query(), "uploadedBy", Note.class, String.class);
+        for (String userId : uploaders) {
+            if (userId == null || userId.isEmpty()) continue;
+            Map<String, Object> stats = getUserStats(userId);
+            long uploaded = (long) stats.get("notesUploaded");
+            long likes = (long) stats.get("totalLikes");
+            long downloads = (long) stats.get("totalDownloads");
+            
+            // Calculate points: 10 per upload, 3 per 5 likes, 5 per 10 downloads
+            int totalPoints = (int) (uploaded * 10 + (likes / 5) * 3 + (downloads / 10) * 5);
+            
+            try {
+                String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
+                        .queryParam("points", totalPoints)
+                        .toUriString();
+                restTemplate.postForEntity(url, null, Void.class);
+            } catch (Exception e) {
+                System.err.println("Failed to set points for user " + userId + ": " + e.getMessage());
+            }
+        }
+    }
+
     public NoteRequest createRequest(NoteRequestDTO dto, String userId, String userEmail) {
         NoteRequest req = new NoteRequest();
         req.setSubject(dto.getSubject());

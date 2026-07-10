@@ -87,6 +87,17 @@ public class NoteController {
         return ResponseEntity.ok(noteService.getStats());
     }
 
+    @GetMapping("/users/{userId}/stats")
+    public ResponseEntity<java.util.Map<String, Object>> getUserStats(@PathVariable String userId) {
+        return ResponseEntity.ok(noteService.getUserStats(userId));
+    }
+
+    @PostMapping("/internal/recalculate-points")
+    public ResponseEntity<Void> recalculatePoints() {
+        noteService.recalculateAllPoints();
+        return ResponseEntity.ok().build();
+    }
+
     @GetMapping("/top")
     public ResponseEntity<List<Note>> getTopNotes() {
         return ResponseEntity.ok(noteService.getTopNotes());
