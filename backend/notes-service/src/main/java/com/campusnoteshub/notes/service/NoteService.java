@@ -280,7 +280,7 @@ public class NoteService {
             long likes = (long) stats.get("totalLikes");
             long downloads = (long) stats.get("totalDownloads");
             
-            // Calculate points: 5 per approved upload, 3 per 5 likes, 5 per 10 downloads
+            // Total Points = (Number of Approved Notes Uploaded by User) * 5 + likes/downloads
             int totalPoints = (int) (uploaded * 5 + (likes / 5) * 3 + (downloads / 10) * 5);
             
             try {
