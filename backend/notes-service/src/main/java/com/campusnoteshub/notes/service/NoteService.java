@@ -270,6 +270,29 @@ public class NoteService {
         return stats;
     }
 
+    /**
+     * Compute total points for each user based ONLY on approved notes.
+     * Total Points = Number of Approved Notes Uploaded by User * 5
+     */
+    public java.util.Map<String, Integer> getPointsSummary() {
+        org.springframework.data.mongodb.core.aggregation.Aggregation agg = org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(
+                org.springframework.data.mongodb.core.aggregation.Aggregation.match(Criteria.where("verified").is(true)),
+                org.springframework.data.mongodb.core.aggregation.Aggregation.group("uploadedBy").count().as("approvedCount")
+        );
+        org.springframework.data.mongodb.core.aggregation.AggregationResults<java.util.Map> results = mongoTemplate.aggregate(agg, "notes", java.util.Map.class);
+        
+        java.util.Map<String, Integer> pointsMap = new java.util.HashMap<>();
+        for (java.util.Map doc : results.getMappedResults()) {
+            String userId = (String) doc.get("_id");
+            if (userId == null || userId.isEmpty()) continue;
+            
+            Number countNum = (Number) doc.get("approvedCount");
+            int approvedCount = countNum != null ? countNum.intValue() : 0;
+            pointsMap.put(userId, approvedCount * 5);
+        }
+        return pointsMap;
+    }
+
     public void recalculateAllPoints() {
         // Find all distinct uploaders
         List<String> uploaders = mongoTemplate.findDistinct(new Query(), "uploadedBy", Note.class, String.class);

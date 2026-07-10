@@ -10,6 +10,8 @@ import org.springframework.data.mongodb.core.aggregation.Aggregation;
 import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.stereotype.Service;
+import org.springframework.web.client.RestTemplate;
+import org.springframework.beans.factory.annotation.Value;
 
 import java.time.LocalDate;
 import java.time.LocalDateTime;
@@ -29,6 +31,12 @@ public class AdminUserService {
 
     @Autowired
     private MongoTemplate mongoTemplate;
+
+    @Autowired
+    private RestTemplate restTemplate;
+
+    @Value("${notes-service.url:http://localhost:8082}")
+    private String notesServiceUrl;
 
     public AdminUserAnalyticsDTO.OverviewStats getOverviewStats() {
         LocalDateTime startOfWeek = LocalDate.now()
@@ -100,5 +108,34 @@ public class AdminUserService {
     private long toLong(Object value) {
         if (value instanceof Number) return ((Number) value).longValue();
         return 0;
+    }
+
+    /**
+     * Performs a one-time migration to fix user points.
+     * Hits notes-service to get points based strictly on approved notes.
+     */
+    public Map<String, Object> migratePoints() {
+        try {
+            // Fetch points summary from notes-service
+            String url = notesServiceUrl + "/notes/internal/points-summary";
+            Map<String, Integer> pointsMap = restTemplate.getForObject(url, Map.class);
+            if (pointsMap == null) pointsMap = new java.util.HashMap<>();
+
+            List<User> users = userRepository.findAll();
+            int updatedCount = 0;
+
+            for (User user : users) {
+                int correctPoints = pointsMap.getOrDefault(user.getId(), 0);
+                if (user.getPoints() != correctPoints) {
+                    user.setPoints(correctPoints);
+                    userRepository.save(user);
+                    updatedCount++;
+                }
+            }
+
+            return Map.of("message", "Migration successful", "updatedCount", updatedCount);
+        } catch (Exception e) {
+            throw new RuntimeException("Migration failed: " + e.getMessage(), e);
+        }
     }
 }

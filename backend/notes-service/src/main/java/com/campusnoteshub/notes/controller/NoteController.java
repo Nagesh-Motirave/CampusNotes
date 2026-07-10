@@ -98,6 +98,11 @@ public class NoteController {
         return ResponseEntity.ok().build();
     }
 
+    @GetMapping("/internal/points-summary")
+    public ResponseEntity<java.util.Map<String, Integer>> getPointsSummary() {
+        return ResponseEntity.ok(noteService.getPointsSummary());
+    }
+
     @GetMapping("/top")
     public ResponseEntity<List<Note>> getTopNotes() {
         return ResponseEntity.ok(noteService.getTopNotes());
