@@ -171,8 +171,8 @@ const Profile = () => {
           </h2>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
-              <p className="text-2xl font-bold text-gray-900">{profile?.stats?.notesUploaded || 0}</p>
-              <p className="text-[10px] text-gray-500 uppercase font-bold tracking-wider mt-1">Uploads</p>
+                <div className="text-3xl font-bold text-gray-900 mb-1">{profile?.stats?.notesUploaded || 0}</div>
+                <div className="text-xs text-gray-500 font-bold uppercase tracking-wider mt-1">Total Approved Notes</div>
             </div>
             <div className="bg-gray-50 rounded-xl p-4 text-center border border-gray-100">
               <p className="text-2xl font-bold text-green-600">{profile?.stats?.totalDownloads || 0}</p>

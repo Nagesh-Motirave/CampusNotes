@@ -6,6 +6,7 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import StatCard from '../../components/admin/StatCard';
+import Leaderboard from '../../components/Leaderboard';
 import {
   getOverviewStats,
   getUploadDownloadStats,
@@ -273,11 +274,11 @@ const AdminDashboard = () => {
             } />
           </div>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4">
-            <StatCard label="Total Users" value={fmt(userOverview?.totalUsers)} color="blue" />
-            <StatCard label="Verified Users" value={fmt(userOverview?.verifiedUsers)} color="emerald" />
-            <StatCard label="New This Week" value={fmt(userOverview?.newUsersThisWeek)} color="primary" />
-            <StatCard label="Uploads This Week" value={fmt(uploadStats?.uploadsThisWeek)} color="primary" subtext={`${uploadStats?.uploadsLastWeek ?? 0} last week`} />
+          <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-4 gap-4 mt-4">
+            <StatCard label="Total Students" value={fmt(userOverview?.totalUsers)} color="blue" />
+            <StatCard label="Total Unique Colleges" value={fmt(usersByCollege?.length)} color="emerald" />
+            <StatCard label="Total Approved Notes" value={fmt((overview?.totalUploads || 0) - (overview?.pendingApproval || 0))} color="primary" />
+            <StatCard label="Total User Points" value={fmt(userOverview?.totalPoints)} color="purple" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -442,10 +443,11 @@ const AdminDashboard = () => {
       {/* Users Tab */}
       {activeTab === 'users' && (
         <div className="space-y-6">
-          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
-            <StatCard label="Total Users" value={fmt(userOverview?.totalUsers)} color="blue" />
-            <StatCard label="Admins" value={fmt(userOverview?.adminUsers)} color="primary" />
-            <StatCard label="New This Month" value={fmt(userOverview?.newUsersThisMonth)} color="emerald" />
+          <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+            <StatCard label="Total Students" value={fmt(userOverview?.totalUsers)} color="blue" />
+            <StatCard label="Total Unique Colleges" value={fmt(usersByCollege?.length)} color="emerald" />
+            <StatCard label="Total Approved Notes" value={fmt((overview?.totalUploads || 0) - (overview?.pendingApproval || 0))} color="primary" />
+            <StatCard label="Total User Points" value={fmt(userOverview?.totalPoints)} color="purple" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -470,18 +472,9 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Top Contributors">
+            <ChartCard title="Leaderboard">
               <div className="space-y-2">
-                {topContributors.map((user, i) => (
-                  <div key={user.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-xs font-bold text-primary-600 w-5">#{user.rank}</span>
-                    <div className="flex-1 min-w-0">
-                      <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
-                      <p className="text-xs text-gray-400">{user.college || 'No college'}</p>
-                    </div>
-                    <span className="badge badge-purple">{user.points} pts</span>
-                  </div>
-                ))}
+                <Leaderboard limit={10} compact={true} />
               </div>
             </ChartCard>
           </div>

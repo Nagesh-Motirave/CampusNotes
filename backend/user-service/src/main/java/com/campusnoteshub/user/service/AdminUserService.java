@@ -44,12 +44,22 @@ public class AdminUserService {
                 .minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
+        Aggregation agg = Aggregation.newAggregation(
+                Aggregation.group().sum("points").as("totalPoints")
+        );
+        AggregationResults<Map> results = mongoTemplate.aggregate(agg, "users", Map.class);
+        long totalPoints = 0;
+        if (!results.getMappedResults().isEmpty()) {
+            totalPoints = toLong(results.getMappedResults().get(0).get("totalPoints"));
+        }
+
         return new AdminUserAnalyticsDTO.OverviewStats(
                 userRepository.count(),
                 userRepository.countByVerifiedTrue(),
                 userRepository.countByRole("ADMIN"),
                 userRepository.countByCreatedAtAfter(startOfWeek),
-                userRepository.countByCreatedAtAfter(startOfMonth)
+                userRepository.countByCreatedAtAfter(startOfMonth),
+                totalPoints
         );
     }
 
@@ -84,7 +94,8 @@ public class AdminUserService {
                     entry.setEmail(u.getEmail());
                     entry.setCollege(u.getCollege());
                     entry.setPoints(u.getPoints());
-                    entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 1);
+                    entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 
+                                  userRepository.countByPointsEqualsAndCreatedAtBefore(u.getPoints(), u.getCreatedAt()) + 1);
                     entry.setRole(u.getRole() != null ? u.getRole() : "USER");
                     entry.setCreatedAt(u.getCreatedAt().toString());
                     return entry;
@@ -93,9 +104,10 @@ public class AdminUserService {
     }
 
     public List<AdminUserAnalyticsDTO.TopContributor> getTopContributors() {
-        return userRepository.findTop10ByOrderByPointsDesc().stream()
+        return userRepository.findTop10ByOrderByPointsDescCreatedAtAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
                 .map(u -> new AdminUserAnalyticsDTO.TopContributor(
-                        u.getId(), u.getName(), u.getCollege(), u.getPoints(), userRepository.countByPointsGreaterThan(u.getPoints()) + 1))
+                        u.getId(), u.getName(), u.getCollege(), u.getPoints(), 
+                        userRepository.countByPointsGreaterThan(u.getPoints()) + userRepository.countByPointsEqualsAndCreatedAtBefore(u.getPoints(), u.getCreatedAt()) + 1))
                 .collect(Collectors.toList());
     }
 

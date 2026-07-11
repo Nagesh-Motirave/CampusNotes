@@ -177,11 +177,6 @@ public class NoteService {
         } else {
             note.getLikes().add(userId);
             note.setLikesCount(note.getLikesCount() + 1);
-            
-            // Award points to uploader if it reaches milestones (e.g. 5 likes)
-            if (note.getLikesCount() % 5 == 0) {
-                awardPoints(note.getUploadedBy(), 3, "Your note '" + note.getTitle() + "' reached " + note.getLikesCount() + " likes!");
-            }
         }
         
         return noteRepository.save(note);
@@ -190,11 +185,6 @@ public class NoteService {
     public Note recordDownload(String id, String userId) {
         Note note = getNoteById(id);
         note.setDownloads(note.getDownloads() + 1);
-        
-        // Award points to uploader if it reaches milestones (e.g. 10 downloads)
-        if (note.getDownloads() % 10 == 0) {
-            awardPoints(note.getUploadedBy(), 5, "Your note '" + note.getTitle() + "' reached " + note.getDownloads() + " downloads!");
-        }
         
         return noteRepository.save(note);
     }
@@ -255,8 +245,10 @@ public class NoteService {
     }
 
     public Map<String, Object> getUserStats(String userId) {
-        // Only count verified (approved) notes for stats and points
-        Query query = new Query(Criteria.where("uploadedBy").is(userId).and("verified").is(true));
+        // Only count verified (approved) and non-archived notes for stats and points
+        Query query = new Query(Criteria.where("uploadedBy").is(userId)
+                .and("verified").is(true)
+                .and("archived").is(false));
         List<Note> userNotes = mongoTemplate.find(query, Note.class);
         
         long notesUploaded = userNotes.size();
@@ -276,7 +268,7 @@ public class NoteService {
      */
     public java.util.Map<String, Integer> getPointsSummary() {
         org.springframework.data.mongodb.core.aggregation.Aggregation agg = org.springframework.data.mongodb.core.aggregation.Aggregation.newAggregation(
-                org.springframework.data.mongodb.core.aggregation.Aggregation.match(Criteria.where("verified").is(true)),
+                org.springframework.data.mongodb.core.aggregation.Aggregation.match(Criteria.where("verified").is(true).and("archived").is(false)),
                 org.springframework.data.mongodb.core.aggregation.Aggregation.group("uploadedBy").count().as("approvedCount")
         );
         org.springframework.data.mongodb.core.aggregation.AggregationResults<java.util.Map> results = mongoTemplate.aggregate(agg, "notes", java.util.Map.class);
@@ -298,22 +290,7 @@ public class NoteService {
         List<String> uploaders = mongoTemplate.findDistinct(new Query(), "uploadedBy", Note.class, String.class);
         for (String userId : uploaders) {
             if (userId == null || userId.isEmpty()) continue;
-            Map<String, Object> stats = getUserStats(userId);
-            long uploaded = (long) stats.get("notesUploaded");
-            long likes = (long) stats.get("totalLikes");
-            long downloads = (long) stats.get("totalDownloads");
-            
-            // Total Points = (Number of Approved Notes Uploaded by User) * 5 + likes/downloads
-            int totalPoints = (int) (uploaded * 5 + (likes / 5) * 3 + (downloads / 10) * 5);
-            
-            try {
-                String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
-                        .queryParam("points", totalPoints)
-                        .toUriString();
-                restTemplate.postForEntity(url, null, Void.class);
-            } catch (Exception e) {
-                System.err.println("Failed to set points for user " + userId + ": " + e.getMessage());
-            }
+            recalculateUserPoints(userId);
         }
     }
 
@@ -338,22 +315,21 @@ public class NoteService {
         req.setFulfilled(true);
         req.setFulfilledBy(userId);
         
-        // Award points for fulfilling request
-        awardPoints(userId, 8, "Fulfilled note request for: " + req.getSubject());
-        
         return noteRequestRepository.save(req);
     }
 
-    public void awardPoints(String userId, int points, String description) {
+    public void recalculateUserPoints(String userId) {
         try {
-            // Internal call to user-service
-            String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points")
-                    .queryParam("points", points)
-                    .queryParam("desc", description)
+            Map<String, Object> stats = getUserStats(userId);
+            long uploaded = (long) stats.get("notesUploaded");
+            int totalPoints = (int) (uploaded * 5);
+
+            String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
+                    .queryParam("points", totalPoints)
                     .toUriString();
             restTemplate.postForEntity(url, null, Void.class);
         } catch (Exception e) {
-            System.err.println("Failed to award points to user " + userId + ": " + e.getMessage());
+            System.err.println("Failed to recalculate points for user " + userId + ": " + e.getMessage());
         }
     }
 

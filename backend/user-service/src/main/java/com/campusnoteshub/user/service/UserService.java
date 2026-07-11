@@ -54,7 +54,8 @@ public class UserService {
             System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
         }
 
-        long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 1;
+        long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 
+                    userRepository.countByPointsEqualsAndCreatedAtBefore(user.getPoints(), user.getCreatedAt()) + 1;
 
         return new UserProfileResponse(
                 user.getId(),
@@ -85,8 +86,8 @@ public class UserService {
     }
 
     public List<LeaderboardEntry> getLeaderboard() {
-        return userRepository.findTop10ByOrderByPointsDesc().stream()
-                .map(u -> new LeaderboardEntry(u.getId(), u.getName(), u.getCollege(), u.getPoints()))
+        return userRepository.findTop10ByOrderByPointsDescCreatedAtAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
+                .map(u -> new LeaderboardEntry(u.getId(), u.getName(), u.getCollege(), u.getPoints(), u.getPoints() / 5))
                 .collect(Collectors.toList());
     }
 
@@ -115,8 +116,13 @@ public class UserService {
     public void setPoints(String userId, int points) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
-        user.setPoints(points);
-        userRepository.save(user);
+        if (user.getPoints() != points) {
+            int diff = points - user.getPoints();
+            String desc = diff > 0 ? "Points recalculated (gained " + diff + ")" : "Points recalculated (lost " + (-diff) + ")";
+            user.addActivity(new User.ActivityLog(diff, desc, LocalDateTime.now()));
+            user.setPoints(points);
+            userRepository.save(user);
+        }
     }
 
     public List<User.Notification> getNotifications(String userId) {

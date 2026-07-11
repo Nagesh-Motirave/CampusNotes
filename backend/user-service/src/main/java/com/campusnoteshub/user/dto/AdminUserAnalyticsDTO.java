@@ -13,16 +13,18 @@ public class AdminUserAnalyticsDTO {
         private long adminUsers;
         private long newUsersThisWeek;
         private long newUsersThisMonth;
+        private long totalPoints;
 
         public OverviewStats() {}
 
         public OverviewStats(long totalUsers, long verifiedUsers, long adminUsers,
-                             long newUsersThisWeek, long newUsersThisMonth) {
+                             long newUsersThisWeek, long newUsersThisMonth, long totalPoints) {
             this.totalUsers = totalUsers;
             this.verifiedUsers = verifiedUsers;
             this.adminUsers = adminUsers;
             this.newUsersThisWeek = newUsersThisWeek;
             this.newUsersThisMonth = newUsersThisMonth;
+            this.totalPoints = totalPoints;
         }
 
         public long getTotalUsers() { return totalUsers; }
@@ -39,6 +41,9 @@ public class AdminUserAnalyticsDTO {
 
         public long getNewUsersThisMonth() { return newUsersThisMonth; }
         public void setNewUsersThisMonth(long newUsersThisMonth) { this.newUsersThisMonth = newUsersThisMonth; }
+
+        public long getTotalPoints() { return totalPoints; }
+        public void setTotalPoints(long totalPoints) { this.totalPoints = totalPoints; }
     }
 
     public static class CollegeUserStat {

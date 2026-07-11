@@ -108,6 +108,13 @@ const Leaderboard = ({ limit = 10, compact = false }) => {
               )}
             </div>
 
+            {/* Approved Notes */}
+            {!compact && (
+              <div className="w-24 text-center text-xs font-medium text-gray-500">
+                {leader.approvedNotes || 0} Notes
+              </div>
+            )}
+
             {/* Points badge */}
             <div className={`px-3 py-1 rounded-full text-xs font-bold ${
               rank === 1 ? 'bg-amber-100 text-amber-700' :

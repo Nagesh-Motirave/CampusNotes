@@ -338,10 +338,11 @@ public class AdminNoteService {
         
         if (!note.isVerified()) {
             note.setVerified(true);
-            noteService.awardPoints(note.getUploadedBy(), 5, "Your note '" + note.getTitle() + "' was approved!");
+            note = noteRepository.save(note);
+            noteService.recalculateUserPoints(note.getUploadedBy());
         }
         
-        return noteRepository.save(note);
+        return note;
     }
 
     /**
@@ -370,7 +371,9 @@ public class AdminNoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
         note.setArchived(true);
-        return noteRepository.save(note);
+        note = noteRepository.save(note);
+        noteService.recalculateUserPoints(note.getUploadedBy());
+        return note;
     }
 
     /**
@@ -380,7 +383,9 @@ public class AdminNoteService {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
         note.setArchived(false);
-        return noteRepository.save(note);
+        note = noteRepository.save(note);
+        noteService.recalculateUserPoints(note.getUploadedBy());
+        return note;
     }
 
     /**
@@ -389,6 +394,8 @@ public class AdminNoteService {
     public void permanentlyDeleteNote(String noteId) {
         Note note = noteRepository.findById(noteId)
                 .orElseThrow(() -> new RuntimeException("Note not found"));
+        String userId = note.getUploadedBy();
         noteRepository.delete(note);
+        noteService.recalculateUserPoints(userId);
     }
 }
