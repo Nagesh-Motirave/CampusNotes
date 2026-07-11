@@ -10,6 +10,7 @@ import org.springframework.web.bind.annotation.*;
 
 import java.util.List;
 import java.util.Map;
+import jakarta.annotation.PostConstruct;
 
 /**
  * Admin-only user analytics controller.
@@ -21,6 +22,11 @@ public class AdminUserController {
 
     @Autowired
     private AdminUserService adminUserService;
+
+    @PostConstruct
+    public void init() {
+        System.out.println("AdminUserController Loaded");
+    }
 
     private boolean isAdmin(String role) {
         return "ADMIN".equalsIgnoreCase(role);

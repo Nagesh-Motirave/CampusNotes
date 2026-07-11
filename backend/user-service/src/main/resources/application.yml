@@ -11,3 +11,8 @@ spring:
 
 notes-service:
   url: ${NOTES_SERVICE_URL:http://localhost:8082}
+
+logging:
+  level:
+    org.springframework.web: DEBUG
+    org.springframework.web.servlet.mvc.method.annotation.RequestMappingHandlerMapping: TRACE
