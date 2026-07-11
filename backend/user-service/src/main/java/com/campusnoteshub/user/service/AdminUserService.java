@@ -35,7 +35,7 @@ public class AdminUserService {
     @Autowired
     private RestTemplate restTemplate;
 
-    @Value("${notes-service.url:http://localhost:8082}")
+    @Value("${NOTES_SERVICE_URL:https://notes-service-production-ca2c.up.railway.app}")
     private String notesServiceUrl;
 
     public AdminUserAnalyticsDTO.OverviewStats getOverviewStats() {
@@ -118,6 +118,7 @@ public class AdminUserService {
         try {
             // Fetch points summary from notes-service
             String url = notesServiceUrl + "/notes/internal/points-summary";
+            System.out.println("Calling Notes Service: " + notesServiceUrl + "/notes/internal/points-summary");
             Map<String, Integer> pointsMap = restTemplate.getForObject(url, Map.class);
             if (pointsMap == null) pointsMap = new java.util.HashMap<>();
 
