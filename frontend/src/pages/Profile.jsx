@@ -148,6 +148,10 @@ const Profile = () => {
           </div>
           
           <div className="flex gap-4 text-center">
+            <div className="bg-gradient-to-br from-purple-50 to-purple-100 rounded-2xl p-4 min-w-[120px] border border-purple-200 shadow-sm">
+              <p className="text-4xl font-black text-purple-800">{profile?.points || 0}</p>
+              <p className="text-xs font-bold text-purple-500 uppercase tracking-wide mt-1">Total Points</p>
+            </div>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 min-w-[120px] border border-gray-200 shadow-sm">
               <p className="text-4xl font-black text-gray-800">{rank}</p>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">Global Rank</p>
