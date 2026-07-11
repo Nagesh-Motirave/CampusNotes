@@ -479,7 +479,7 @@ const AdminDashboard = () => {
                       <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-400">{user.college || 'No college'}</p>
                     </div>
-                    <span className="badge badge-purple">{user.points || 0} pts</span>
+                    <span className="badge badge-purple">{user.points} pts</span>
                   </div>
                 ))}
               </div>
@@ -508,7 +508,7 @@ const AdminDashboard = () => {
                       <td className="px-5 py-3 font-medium text-gray-900">{user.name}</td>
                       <td className="px-5 py-3 text-gray-600">{user.email}</td>
                       <td className="px-5 py-3 text-gray-600">{user.college || '—'}</td>
-                      <td className="px-5 py-3 text-gray-600">{user.points || 0}</td>
+                      <td className="px-5 py-3 text-gray-600">{user.points}</td>
                       <td className="px-5 py-3">
                         <select
                           value={user.role || 'USER'}

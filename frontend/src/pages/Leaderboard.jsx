@@ -63,7 +63,7 @@ const Leaderboard = () => {
                   </td>
                   <td className="p-4 text-gray-500 text-sm">{leader.college || '—'}</td>
                   <td className="p-4 text-right">
-                    <span className="badge badge-purple text-base font-bold">{leader.points || 0}</span>
+                    <span className="badge badge-purple text-base font-bold">{leader.points}</span>
                   </td>
                 </tr>
               ))}

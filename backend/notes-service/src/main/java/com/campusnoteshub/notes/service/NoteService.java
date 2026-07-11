@@ -68,8 +68,9 @@ public class NoteService {
         note.setUploaderName(userEmail.split("@")[0]); // Simplified name logic for now
 
         Note savedNote = noteRepository.save(note);
-        // Award points upon upload as required
-        awardPoints(userId, 10, "Uploaded a new note: " + note.getTitle());
+        
+        // Note: Points are now awarded upon admin approval, not upload.
+
         // Auto-fulfill matching requests and notify
         List<NoteRequest> openRequests = noteRequestRepository.findByFulfilledFalseOrderByCreatedAtDesc();
         for (NoteRequest req : openRequests) {
@@ -346,12 +347,11 @@ public class NoteService {
     public void awardPoints(String userId, int points, String description) {
         try {
             // Internal call to user-service
-            java.net.URI uri = org.springframework.web.util.UriComponentsBuilder.fromHttpUrl(userServiceUrl)
-                    .pathSegment("users", "internal", userId, "points")
+            String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points")
                     .queryParam("points", points)
                     .queryParam("desc", description)
-                    .build().toUri();
-            restTemplate.postForEntity(uri, null, Void.class);
+                    .toUriString();
+            restTemplate.postForEntity(url, null, Void.class);
         } catch (Exception e) {
             System.err.println("Failed to award points to user " + userId + ": " + e.getMessage());
         }
