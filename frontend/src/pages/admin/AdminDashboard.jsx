@@ -474,7 +474,7 @@ const AdminDashboard = () => {
               <div className="space-y-2">
                 {topContributors.map((user, i) => (
                   <div key={user.id} className="flex items-center gap-3 py-2 border-b border-gray-50 last:border-0">
-                    <span className="text-xs font-bold text-primary-600 w-5">{i + 1}</span>
+                    <span className="text-xs font-bold text-primary-600 w-5">#{user.rank}</span>
                     <div className="flex-1 min-w-0">
                       <p className="text-sm font-medium text-gray-900 truncate">{user.name}</p>
                       <p className="text-xs text-gray-400">{user.college || 'No college'}</p>
@@ -498,6 +498,7 @@ const AdminDashboard = () => {
                     <th className="px-5 py-3 text-left">Email</th>
                     <th className="px-5 py-3 text-left">College</th>
                     <th className="px-5 py-3 text-left">Points</th>
+                    <th className="px-5 py-3 text-left">Rank</th>
                     <th className="px-5 py-3 text-left">Role</th>
                     <th className="px-5 py-3 text-left">Joined</th>
                   </tr>
@@ -509,6 +510,7 @@ const AdminDashboard = () => {
                       <td className="px-5 py-3 text-gray-600">{user.email}</td>
                       <td className="px-5 py-3 text-gray-600">{user.college || '—'}</td>
                       <td className="px-5 py-3 text-gray-600">{user.points}</td>
+                      <td className="px-5 py-3 text-gray-600">#{user.rank}</td>
                       <td className="px-5 py-3">
                         <select
                           value={user.role || 'USER'}

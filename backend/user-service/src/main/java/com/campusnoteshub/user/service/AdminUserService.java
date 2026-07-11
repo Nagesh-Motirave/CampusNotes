@@ -84,6 +84,7 @@ public class AdminUserService {
                     entry.setEmail(u.getEmail());
                     entry.setCollege(u.getCollege());
                     entry.setPoints(u.getPoints());
+                    entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 1);
                     entry.setRole(u.getRole() != null ? u.getRole() : "USER");
                     entry.setCreatedAt(u.getCreatedAt().toString());
                     return entry;
@@ -94,7 +95,7 @@ public class AdminUserService {
     public List<AdminUserAnalyticsDTO.TopContributor> getTopContributors() {
         return userRepository.findTop10ByOrderByPointsDesc().stream()
                 .map(u -> new AdminUserAnalyticsDTO.TopContributor(
-                        u.getId(), u.getName(), u.getCollege(), u.getPoints()))
+                        u.getId(), u.getName(), u.getCollege(), u.getPoints(), userRepository.countByPointsGreaterThan(u.getPoints()) + 1))
                 .collect(Collectors.toList());
     }
 

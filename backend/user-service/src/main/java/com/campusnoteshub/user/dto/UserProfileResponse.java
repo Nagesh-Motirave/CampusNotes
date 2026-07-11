@@ -10,6 +10,7 @@ public class UserProfileResponse {
     private String email;
     private String college;
     private int points;
+    private long rank;
     private String role;
     private UserStats stats;
     private List<ActivityLog> activity;
@@ -30,12 +31,13 @@ public class UserProfileResponse {
         public int getTotalDownloads() { return totalDownloads; }
     }
 
-    public UserProfileResponse(String id, String name, String email, String college, int points, String role, UserStats stats, List<ActivityLog> activity) {
+    public UserProfileResponse(String id, String name, String email, String college, int points, long rank, String role, UserStats stats, List<ActivityLog> activity) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.college = college;
         this.points = points;
+        this.rank = rank;
         this.role = role;
         this.stats = stats;
         this.activity = activity;
@@ -47,6 +49,7 @@ public class UserProfileResponse {
     public String getEmail() { return email; }
     public String getCollege() { return college; }
     public int getPoints() { return points; }
+    public long getRank() { return rank; }
     public String getRole() { return role; }
     public UserStats getStats() { return stats; }
     public List<ActivityLog> getActivity() { return activity; }

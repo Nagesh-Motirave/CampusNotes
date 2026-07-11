@@ -18,4 +18,6 @@ public interface UserRepository extends MongoRepository<User, String> {
     long countByVerifiedTrue();
 
     long countByCreatedAtAfter(LocalDateTime date);
+
+    long countByPointsGreaterThan(int points);
 }

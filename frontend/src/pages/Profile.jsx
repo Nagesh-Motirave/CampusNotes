@@ -5,7 +5,7 @@ import { getUserProfile, updateUserProfile } from '../api/users';
 import { getNotes } from '../api/notes';
 import Leaderboard from '../components/Leaderboard';
 import { ProfileSkeleton } from '../components/LoadingSkeleton';
-import { getContributorLevel, calculateGlobalRank, calculateContributionScore, calculateBadges } from '../utils/achievementUtils';
+import { getContributorLevel, calculateContributionScore, calculateBadges } from '../utils/achievementUtils';
 import NoteCard from '../components/NoteCard';
 
 const Profile = () => {
@@ -91,7 +91,7 @@ const Profile = () => {
 
   // --- Calculations ---
   const level = getContributorLevel(profile?.points || 0);
-  const rank = calculateGlobalRank(profile?.points || 0);
+  const rank = profile?.rank ? `#${profile.rank}` : 'Unranked';
   const contributionScore = calculateContributionScore(
     profile?.stats?.notesUploaded || 0,
     profile?.stats?.totalLikes || 0,
@@ -148,6 +148,10 @@ const Profile = () => {
           </div>
           
           <div className="flex gap-4 text-center">
+            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 min-w-[120px] border border-gray-200 shadow-sm">
+              <p className="text-4xl font-black text-gray-800">{profile?.points || 0}</p>
+              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">Total Points</p>
+            </div>
             <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 min-w-[120px] border border-gray-200 shadow-sm">
               <p className="text-4xl font-black text-gray-800">{rank}</p>
               <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">Global Rank</p>

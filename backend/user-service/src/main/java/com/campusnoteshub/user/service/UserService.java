@@ -54,12 +54,15 @@ public class UserService {
             System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
         }
 
+        long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 1;
+
         return new UserProfileResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getCollege(),
                 user.getPoints(),
+                rank,
                 user.getRole(),
                 stats,
                 user.getActivity()

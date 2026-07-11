@@ -70,6 +70,7 @@ public class AdminUserAnalyticsDTO {
         private String email;
         private String college;
         private int points;
+        private long rank;
         private String role;
         private String createdAt;
 
@@ -88,6 +89,9 @@ public class AdminUserAnalyticsDTO {
         public int getPoints() { return points; }
         public void setPoints(int points) { this.points = points; }
 
+        public long getRank() { return rank; }
+        public void setRank(long rank) { this.rank = rank; }
+
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
 
@@ -100,14 +104,16 @@ public class AdminUserAnalyticsDTO {
         private String name;
         private String college;
         private int points;
+        private long rank;
 
         public TopContributor() {}
 
-        public TopContributor(String id, String name, String college, int points) {
+        public TopContributor(String id, String name, String college, int points, long rank) {
             this.id = id;
             this.name = name;
             this.college = college;
             this.points = points;
+            this.rank = rank;
         }
 
         public String getId() { return id; }
@@ -121,5 +127,8 @@ public class AdminUserAnalyticsDTO {
 
         public int getPoints() { return points; }
         public void setPoints(int points) { this.points = points; }
+
+        public long getRank() { return rank; }
+        public void setRank(long rank) { this.rank = rank; }
     }
 }
