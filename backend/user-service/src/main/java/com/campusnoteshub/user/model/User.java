@@ -43,6 +43,8 @@ public class User {
         private String description;
         private LocalDateTime date;
 
+        public ActivityLog() {}
+
         public ActivityLog(int points, String description, LocalDateTime date) {
             this.points = points;
             this.description = description;

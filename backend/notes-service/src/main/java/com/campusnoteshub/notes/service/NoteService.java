@@ -321,7 +321,7 @@ public class NoteService {
     public void recalculateUserPoints(String userId) {
         try {
             Map<String, Object> stats = getUserStats(userId);
-            long uploaded = (long) stats.get("notesUploaded");
+            long uploaded = ((Number) stats.get("notesUploaded")).longValue();
             int totalPoints = (int) (uploaded * 5);
 
             String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
