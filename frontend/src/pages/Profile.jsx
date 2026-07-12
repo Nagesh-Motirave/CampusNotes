@@ -3,9 +3,9 @@ import { Link } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getUserProfile, updateUserProfile } from '../api/users';
 import { getNotes } from '../api/notes';
-import Leaderboard from '../components/Leaderboard';
+
 import { ProfileSkeleton } from '../components/LoadingSkeleton';
-import { getContributorLevel, calculateContributionScore, calculateBadges } from '../utils/achievementUtils';
+import { calculateContributionScore, calculateBadges } from '../utils/achievementUtils';
 import NoteCard from '../components/NoteCard';
 
 const Profile = () => {
@@ -15,7 +15,7 @@ const Profile = () => {
   // New States for History and Favorites
   const [uploadHistory, setUploadHistory] = useState([]);
   const [favoriteNotes, setFavoriteNotes] = useState([]);
-  const [activeTab, setActiveTab] = useState('uploads'); // 'uploads', 'favorites', 'activity'
+  const [activeTab, setActiveTab] = useState('uploads'); // 'uploads', 'favorites'
   
   const [loading, setLoading] = useState(true);
 
@@ -90,8 +90,7 @@ const Profile = () => {
   }
 
   // --- Calculations ---
-  const level = getContributorLevel(profile?.points || 0);
-  const rank = profile?.rank ? `#${profile.rank}` : 'Unranked';
+
   const contributionScore = calculateContributionScore(
     profile?.stats?.notesUploaded || 0,
     profile?.stats?.totalLikes || 0,
@@ -114,11 +113,8 @@ const Profile = () => {
         <div className="glass-card bg-white/95 backdrop-blur-md rounded-[22px] p-8 relative z-10 flex flex-col md:flex-row items-center gap-8">
           
           <div className="relative">
-            <div className={`w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl border-4 ${level.border} ${level.bg} ${level.color}`}>
+            <div className={`w-32 h-32 rounded-full flex items-center justify-center text-4xl font-bold shadow-xl border-4 border-white bg-primary-100 text-primary-700`}>
               {getInitials(profile?.name || user?.name)}
-            </div>
-            <div className={`absolute -bottom-3 left-1/2 -translate-x-1/2 px-4 py-1 rounded-full text-xs font-bold uppercase tracking-wider shadow-lg border bg-white ${level.color} ${level.border} whitespace-nowrap`}>
-              {level.name}
             </div>
           </div>
 
@@ -144,17 +140,6 @@ const Profile = () => {
                   Admin Dashboard
                 </Link>
               )}
-            </div>
-          </div>
-          
-          <div className="flex gap-4 text-center">
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 min-w-[120px] border border-gray-200 shadow-sm">
-              <p className="text-4xl font-black text-gray-800">{profile?.points || 0}</p>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">Total Points</p>
-            </div>
-            <div className="bg-gradient-to-br from-gray-50 to-gray-100 rounded-2xl p-4 min-w-[120px] border border-gray-200 shadow-sm">
-              <p className="text-4xl font-black text-gray-800">{rank}</p>
-              <p className="text-xs font-bold text-gray-500 uppercase tracking-wide mt-1">Global Rank</p>
             </div>
           </div>
         </div>
@@ -222,12 +207,6 @@ const Profile = () => {
           >
             Favorite Notes ({favoriteNotes.length})
           </button>
-          <button 
-            onClick={() => setActiveTab('activity')}
-            className={`px-6 py-4 text-sm font-bold whitespace-nowrap border-b-2 transition-colors ${activeTab === 'activity' ? 'border-primary-500 text-primary-600 bg-primary-50/50' : 'border-transparent text-gray-500 hover:text-gray-700 hover:bg-gray-50'}`}
-          >
-            Points Activity
-          </button>
         </div>
 
         <div className="p-6 bg-gray-50/30">
@@ -264,35 +243,7 @@ const Profile = () => {
             )
           )}
 
-          {/* ACTIVITY TAB */}
-          {activeTab === 'activity' && (
-            <div className="max-w-3xl mx-auto">
-              {profile?.activity?.length > 0 ? (
-                <div className="space-y-4 relative before:absolute before:inset-0 before:ml-5 before:-translate-x-px md:before:mx-auto md:before:translate-x-0 before:h-full before:w-0.5 before:bg-gradient-to-b before:from-transparent before:via-gray-200 before:to-transparent">
-                  {profile.activity.map((act, i) => (
-                    <div key={i} className="relative flex items-center justify-between md:justify-normal md:odd:flex-row-reverse group is-active">
-                      
-                      <div className="flex items-center justify-center w-10 h-10 rounded-full border-4 border-white bg-white shadow shrink-0 md:order-1 md:group-odd:-translate-x-1/2 md:group-even:translate-x-1/2 relative z-10 text-xl">
-                        {act.points > 0 ? '🏆' : '💸'}
-                      </div>
-                      
-                      <div className="w-[calc(100%-4rem)] md:w-[calc(50%-2.5rem)] glass-card p-4 rounded-xl shadow-sm border border-gray-100">
-                        <div className="flex items-center justify-between mb-1">
-                          <span className={`text-sm font-black ${act.points > 0 ? 'text-green-600' : 'text-red-600'}`}>
-                            {act.points > 0 ? `+${act.points} pts` : `${act.points} pts`}
-                          </span>
-                          <time className="text-xs text-gray-400 font-medium">{new Date(act.date).toLocaleDateString()}</time>
-                        </div>
-                        <p className="text-gray-700 text-sm">{act.description}</p>
-                      </div>
-                    </div>
-                  ))}
-                </div>
-              ) : (
-                <p className="text-sm text-gray-500 text-center py-10">No recent activity found.</p>
-              )}
-            </div>
-          )}
+
 
         </div>
       </div>

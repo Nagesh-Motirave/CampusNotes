@@ -22,15 +22,11 @@ public class User {
     
     private String college;
     
-    private int points = 0;
-    
     private boolean verified = false;
 
     private String role = "USER";
     
     private LocalDateTime createdAt = LocalDateTime.now();
-
-    private LocalDateTime lastPointsUpdate = LocalDateTime.now();
 
     // Getters and Setters
     public String getId() { return id; }
@@ -48,17 +44,11 @@ public class User {
     public String getCollege() { return college; }
     public void setCollege(String college) { this.college = college; }
 
-    public int getPoints() { return points; }
-    public void setPoints(int points) { this.points = points; }
-
     public boolean isVerified() { return verified; }
     public void setVerified(boolean verified) { this.verified = verified; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
-
-    public LocalDateTime getLastPointsUpdate() { return lastPointsUpdate; }
-    public void setLastPointsUpdate(LocalDateTime lastPointsUpdate) { this.lastPointsUpdate = lastPointsUpdate; }
 
     public String getRole() { return (role == null || role.isEmpty()) ? "USER" : role; }
     public void setRole(String role) { this.role = role; }

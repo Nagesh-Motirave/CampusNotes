@@ -1,6 +1,5 @@
 package com.campusnoteshub.user.service;
 
-import com.campusnoteshub.user.dto.LeaderboardEntry;
 import com.campusnoteshub.user.dto.UserProfileResponse;
 import com.campusnoteshub.user.model.User;
 import com.campusnoteshub.user.repository.UserRepository;
@@ -18,7 +17,6 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
-import java.util.stream.Collectors;
 
 @Service
 public class UserService {
@@ -54,20 +52,23 @@ public class UserService {
             System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
         }
 
+<<<<<<< HEAD
+=======
+<<<<<<< HEAD
+=======
+>>>>>>> 6ad700d736ea779bb723f7a6d1894f562d64e478
         LocalDateTime lastUpdate = user.getLastPointsUpdate() != null ? user.getLastPointsUpdate() : LocalDateTime.now();
         long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 
                     userRepository.countByPointsEqualsAndLastPointsUpdateBefore(user.getPoints(), lastUpdate) + 1;
 
+>>>>>>> 3af4d8f (admin data fix issue)
         return new UserProfileResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
                 user.getCollege(),
-                user.getPoints(),
-                rank,
                 user.getRole(),
-                stats,
-                user.getActivity()
+                stats
         );
     }
 
@@ -86,13 +87,6 @@ public class UserService {
         return getUserProfile(userId);
     }
 
-    public List<LeaderboardEntry> getLeaderboard() {
-        return userRepository.findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
-                .map(u -> new LeaderboardEntry(u.getId(), u.getName(), u.getCollege(), u.getPoints(), u.getPoints() / 5))
-                .collect(Collectors.toList());
-    }
-
-    /** Returns the total number of registered users (active students). */
     public long getUserCount() {
         return userRepository.count();
     }
@@ -102,30 +96,6 @@ public class UserService {
         query.addCriteria(Criteria.where("college").exists(true).ne("").ne(null));
         List<String> colleges = mongoTemplate.findDistinct(query, "college", User.class, String.class);
         return colleges.size();
-    }
-
-    public void addPoints(String userId, int points, String description) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        user.setPoints(user.getPoints() + points);
-        user.setLastPointsUpdate(LocalDateTime.now());
-        user.addActivity(new User.ActivityLog(points, description, LocalDateTime.now()));
-        
-        userRepository.save(user);
-    }
-
-    public void setPoints(String userId, int points) {
-        User user = userRepository.findById(userId)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        if (user.getPoints() != points) {
-            int diff = points - user.getPoints();
-            String desc = diff > 0 ? "Points recalculated (gained " + diff + ")" : "Points recalculated (lost " + (-diff) + ")";
-            user.addActivity(new User.ActivityLog(diff, desc, LocalDateTime.now()));
-            user.setPoints(points);
-            user.setLastPointsUpdate(LocalDateTime.now());
-            userRepository.save(user);
-        }
     }
 
     public List<User.Notification> getNotifications(String userId) {

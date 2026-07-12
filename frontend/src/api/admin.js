@@ -91,10 +91,7 @@ export const getRecentUsers = async () => {
   return response.data;
 };
 
-export const getTopContributors = async () => {
-  const response = await api.get('/users/admin/top-contributors');
-  return response.data;
-};
+
 
 export const updateUserRole = async (id, role) => {
   const response = await api.put(`/users/admin/${id}/role`, { role });

@@ -13,18 +13,16 @@ public class AdminUserAnalyticsDTO {
         private long adminUsers;
         private long newUsersThisWeek;
         private long newUsersThisMonth;
-        private long totalPoints;
 
         public OverviewStats() {}
 
         public OverviewStats(long totalUsers, long verifiedUsers, long adminUsers,
-                             long newUsersThisWeek, long newUsersThisMonth, long totalPoints) {
+                             long newUsersThisWeek, long newUsersThisMonth) {
             this.totalUsers = totalUsers;
             this.verifiedUsers = verifiedUsers;
             this.adminUsers = adminUsers;
             this.newUsersThisWeek = newUsersThisWeek;
             this.newUsersThisMonth = newUsersThisMonth;
-            this.totalPoints = totalPoints;
         }
 
         public long getTotalUsers() { return totalUsers; }
@@ -41,22 +39,17 @@ public class AdminUserAnalyticsDTO {
 
         public long getNewUsersThisMonth() { return newUsersThisMonth; }
         public void setNewUsersThisMonth(long newUsersThisMonth) { this.newUsersThisMonth = newUsersThisMonth; }
-
-        public long getTotalPoints() { return totalPoints; }
-        public void setTotalPoints(long totalPoints) { this.totalPoints = totalPoints; }
     }
 
     public static class CollegeUserStat {
         private String college;
         private long userCount;
-        private long totalPoints;
 
         public CollegeUserStat() {}
 
-        public CollegeUserStat(String college, long userCount, long totalPoints) {
+        public CollegeUserStat(String college, long userCount) {
             this.college = college;
             this.userCount = userCount;
-            this.totalPoints = totalPoints;
         }
 
         public String getCollege() { return college; }
@@ -64,9 +57,6 @@ public class AdminUserAnalyticsDTO {
 
         public long getUserCount() { return userCount; }
         public void setUserCount(long userCount) { this.userCount = userCount; }
-
-        public long getTotalPoints() { return totalPoints; }
-        public void setTotalPoints(long totalPoints) { this.totalPoints = totalPoints; }
     }
 
     public static class RecentUser {
@@ -74,8 +64,6 @@ public class AdminUserAnalyticsDTO {
         private String name;
         private String email;
         private String college;
-        private int points;
-        private long rank;
         private String role;
         private String createdAt;
 
@@ -91,49 +79,10 @@ public class AdminUserAnalyticsDTO {
         public String getCollege() { return college; }
         public void setCollege(String college) { this.college = college; }
 
-        public int getPoints() { return points; }
-        public void setPoints(int points) { this.points = points; }
-
-        public long getRank() { return rank; }
-        public void setRank(long rank) { this.rank = rank; }
-
         public String getRole() { return role; }
         public void setRole(String role) { this.role = role; }
 
         public String getCreatedAt() { return createdAt; }
         public void setCreatedAt(String createdAt) { this.createdAt = createdAt; }
-    }
-
-    public static class TopContributor {
-        private String id;
-        private String name;
-        private String college;
-        private int points;
-        private long rank;
-
-        public TopContributor() {}
-
-        public TopContributor(String id, String name, String college, int points, long rank) {
-            this.id = id;
-            this.name = name;
-            this.college = college;
-            this.points = points;
-            this.rank = rank;
-        }
-
-        public String getId() { return id; }
-        public void setId(String id) { this.id = id; }
-
-        public String getName() { return name; }
-        public void setName(String name) { this.name = name; }
-
-        public String getCollege() { return college; }
-        public void setCollege(String college) { this.college = college; }
-
-        public int getPoints() { return points; }
-        public void setPoints(int points) { this.points = points; }
-
-        public long getRank() { return rank; }
-        public void setRank(long rank) { this.rank = rank; }
     }
 }

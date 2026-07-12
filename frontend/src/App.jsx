@@ -13,7 +13,6 @@ import NotesList from './pages/NotesList';
 import NoteDetail from './pages/NoteDetail';
 import UploadNote from './pages/UploadNote';
 import RequestsPage from './pages/RequestsPage';
-import Leaderboard from './pages/Leaderboard';
 import Profile from './pages/Profile';
 import RequestNotes from './pages/RequestNotes';
 import AdminDashboard from './pages/admin/AdminDashboard';
@@ -36,7 +35,7 @@ function App() {
               <Route path="/notes" element={<NotesList />} />
               <Route path="/notes/:id" element={<NoteDetail />} />
               <Route path="/requests" element={<RequestsPage />} />
-              <Route path="/leaderboard" element={<Leaderboard />} />
+
               <Route path="/request-notes" element={<RequestNotes />} />
 
               {/* Protected Routes */}
