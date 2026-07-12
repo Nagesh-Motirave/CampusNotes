@@ -55,7 +55,7 @@ public class UserService {
         }
 
         long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 
-                    userRepository.countByPointsEqualsAndCreatedAtBefore(user.getPoints(), user.getCreatedAt()) + 1;
+                    userRepository.countByPointsEqualsAndLastPointsUpdateBefore(user.getPoints(), user.getLastPointsUpdate()) + 1;
 
         return new UserProfileResponse(
                 user.getId(),
@@ -86,7 +86,7 @@ public class UserService {
     }
 
     public List<LeaderboardEntry> getLeaderboard() {
-        return userRepository.findTop10ByOrderByPointsDescCreatedAtAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
+        return userRepository.findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
                 .map(u -> new LeaderboardEntry(u.getId(), u.getName(), u.getCollege(), u.getPoints(), u.getPoints() / 5))
                 .collect(Collectors.toList());
     }
@@ -108,6 +108,7 @@ public class UserService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         user.setPoints(user.getPoints() + points);
+        user.setLastPointsUpdate(LocalDateTime.now());
         user.addActivity(new User.ActivityLog(points, description, LocalDateTime.now()));
         
         userRepository.save(user);
@@ -121,6 +122,7 @@ public class UserService {
             String desc = diff > 0 ? "Points recalculated (gained " + diff + ")" : "Points recalculated (lost " + (-diff) + ")";
             user.addActivity(new User.ActivityLog(diff, desc, LocalDateTime.now()));
             user.setPoints(points);
+            user.setLastPointsUpdate(LocalDateTime.now());
             userRepository.save(user);
         }
     }

@@ -32,6 +32,8 @@ public class User {
     
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private LocalDateTime lastPointsUpdate = LocalDateTime.now();
+
     // Gamification Activity Log
     private List<ActivityLog> activity = new ArrayList<>();
 
@@ -108,6 +110,9 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getLastPointsUpdate() { return lastPointsUpdate; }
+    public void setLastPointsUpdate(LocalDateTime lastPointsUpdate) { this.lastPointsUpdate = lastPointsUpdate; }
 
     public List<ActivityLog> getActivity() { return activity; }
     public void addActivity(ActivityLog log) { this.activity.add(0, log); } // Add to start

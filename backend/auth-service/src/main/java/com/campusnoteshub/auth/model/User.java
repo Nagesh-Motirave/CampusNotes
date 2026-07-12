@@ -30,6 +30,8 @@ public class User {
     
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private LocalDateTime lastPointsUpdate = LocalDateTime.now();
+
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -54,6 +56,9 @@ public class User {
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
+
+    public LocalDateTime getLastPointsUpdate() { return lastPointsUpdate; }
+    public void setLastPointsUpdate(LocalDateTime lastPointsUpdate) { this.lastPointsUpdate = lastPointsUpdate; }
 
     public String getRole() { return (role == null || role.isEmpty()) ? "USER" : role; }
     public void setRole(String role) { this.role = role; }

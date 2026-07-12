@@ -95,7 +95,7 @@ public class AdminUserService {
                     entry.setCollege(u.getCollege());
                     entry.setPoints(u.getPoints());
                     entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 
-                                  userRepository.countByPointsEqualsAndCreatedAtBefore(u.getPoints(), u.getCreatedAt()) + 1);
+                                  userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), u.getLastPointsUpdate()) + 1);
                     entry.setRole(u.getRole() != null ? u.getRole() : "USER");
                     entry.setCreatedAt(u.getCreatedAt().toString());
                     return entry;
@@ -104,10 +104,10 @@ public class AdminUserService {
     }
 
     public List<AdminUserAnalyticsDTO.TopContributor> getTopContributors() {
-        return userRepository.findTop10ByOrderByPointsDescCreatedAtAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
+        return userRepository.findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
                 .map(u -> new AdminUserAnalyticsDTO.TopContributor(
                         u.getId(), u.getName(), u.getCollege(), u.getPoints(), 
-                        userRepository.countByPointsGreaterThan(u.getPoints()) + userRepository.countByPointsEqualsAndCreatedAtBefore(u.getPoints(), u.getCreatedAt()) + 1))
+                        userRepository.countByPointsGreaterThan(u.getPoints()) + userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), u.getLastPointsUpdate()) + 1))
                 .collect(Collectors.toList());
     }
 

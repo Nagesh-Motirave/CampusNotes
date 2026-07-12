@@ -21,8 +21,8 @@ public interface UserRepository extends MongoRepository<User, String> {
 
     long countByPointsGreaterThan(int points);
 
-    long countByPointsEqualsAndCreatedAtBefore(int points, LocalDateTime createdAt);
+    long countByPointsEqualsAndLastPointsUpdateBefore(int points, LocalDateTime lastPointsUpdate);
 
-    @org.springframework.data.mongodb.repository.Query(value = "{}", sort = "{ 'points' : -1, 'createdAt' : 1 }")
-    List<User> findTop10ByOrderByPointsDescCreatedAtAsc(org.springframework.data.domain.Pageable pageable);
+    @org.springframework.data.mongodb.repository.Query(value = "{}", sort = "{ 'points' : -1, 'lastPointsUpdate' : 1 }")
+    List<User> findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.Pageable pageable);
 }
