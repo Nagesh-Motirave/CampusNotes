@@ -44,22 +44,12 @@ public class AdminUserService {
                 .minusDays(LocalDate.now().getDayOfWeek().getValue() - 1);
         LocalDateTime startOfMonth = LocalDate.now().withDayOfMonth(1).atStartOfDay();
 
-        Aggregation agg = Aggregation.newAggregation(
-                Aggregation.group().sum("points").as("totalPoints")
-        );
-        AggregationResults<Map> results = mongoTemplate.aggregate(agg, "users", Map.class);
-        long totalPoints = 0;
-        if (!results.getMappedResults().isEmpty()) {
-            totalPoints = toLong(results.getMappedResults().get(0).get("totalPoints"));
-        }
-
         return new AdminUserAnalyticsDTO.OverviewStats(
                 userRepository.count(),
                 userRepository.countByVerifiedTrue(),
                 userRepository.countByRole("ADMIN"),
                 userRepository.countByCreatedAtAfter(startOfWeek),
-                userRepository.countByCreatedAtAfter(startOfMonth),
-                totalPoints
+                userRepository.countByCreatedAtAfter(startOfMonth)
         );
     }
 
@@ -67,8 +57,7 @@ public class AdminUserService {
         Aggregation agg = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("college").ne(null).ne("")),
                 Aggregation.group("college")
-                        .count().as("userCount")
-                        .sum("points").as("totalPoints"),
+                        .count().as("userCount"),
                 Aggregation.sort(Sort.Direction.DESC, "userCount"),
                 Aggregation.limit(15)
         );
@@ -78,8 +67,7 @@ public class AdminUserService {
         for (Map doc : results.getMappedResults()) {
             stats.add(new AdminUserAnalyticsDTO.CollegeUserStat(
                     String.valueOf(doc.get("_id")),
-                    toLong(doc.get("userCount")),
-                    toLong(doc.get("totalPoints"))
+                    toLong(doc.get("userCount"))
             ));
         }
         return stats;
@@ -93,21 +81,10 @@ public class AdminUserService {
                     entry.setName(u.getName());
                     entry.setEmail(u.getEmail());
                     entry.setCollege(u.getCollege());
-                    entry.setPoints(u.getPoints());
-                    entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 
-                                  userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), u.getLastPointsUpdate()) + 1);
                     entry.setRole(u.getRole() != null ? u.getRole() : "USER");
                     entry.setCreatedAt(u.getCreatedAt().toString());
                     return entry;
                 })
-                .collect(Collectors.toList());
-    }
-
-    public List<AdminUserAnalyticsDTO.TopContributor> getTopContributors() {
-        return userRepository.findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
-                .map(u -> new AdminUserAnalyticsDTO.TopContributor(
-                        u.getId(), u.getName(), u.getCollege(), u.getPoints(), 
-                        userRepository.countByPointsGreaterThan(u.getPoints()) + userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), u.getLastPointsUpdate()) + 1))
                 .collect(Collectors.toList());
     }
 
@@ -123,33 +100,4 @@ public class AdminUserService {
         return 0;
     }
 
-    /**
-     * Performs a one-time migration to fix user points.
-     * Hits notes-service to get points based strictly on approved notes.
-     */
-    public Map<String, Object> migratePoints() {
-        try {
-            // Fetch points summary from notes-service
-            String url = notesServiceUrl + "/notes/internal/points-summary";
-            System.out.println("Calling Notes Service: " + notesServiceUrl + "/notes/internal/points-summary");
-            Map<String, Integer> pointsMap = restTemplate.getForObject(url, Map.class);
-            if (pointsMap == null) pointsMap = new java.util.HashMap<>();
-
-            List<User> users = userRepository.findAll();
-            int updatedCount = 0;
-
-            for (User user : users) {
-                int correctPoints = pointsMap.getOrDefault(user.getId(), 0);
-                if (user.getPoints() != correctPoints) {
-                    user.setPoints(correctPoints);
-                    userRepository.save(user);
-                    updatedCount++;
-                }
-            }
-
-            return Map.of("message", "Migration successful", "updatedCount", updatedCount);
-        } catch (Exception e) {
-            throw new RuntimeException("Migration failed: " + e.getMessage(), e);
-        }
-    }
 }

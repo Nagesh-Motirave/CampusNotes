@@ -50,12 +50,6 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.getRecentUsers());
     }
 
-    @GetMapping("/top-contributors")
-    public ResponseEntity<?> getTopContributors(@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
-        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        return ResponseEntity.ok(adminUserService.getTopContributors());
-    }
-
     @PutMapping("/{id}/role")
     public ResponseEntity<?> updateUserRole(@PathVariable String id,
                                             @RequestBody Map<String, String> body,
@@ -68,9 +62,4 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserRole(id, newRole));
     }
 
-    @PostMapping("/migrate-points")
-    public ResponseEntity<?> migratePoints(@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
-        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
-        return ResponseEntity.ok(adminUserService.migratePoints());
-    }
 }

@@ -16,10 +16,7 @@ export const updateUserProfile = async (id, data) => {
   return response.data;
 };
 
-export const getLeaderboard = async () => {
-  const response = await api.get('/users/leaderboard');
-  return response.data;
-};
+
 
 export const getStudentsCount = async () => {
   const response = await api.get('/users/count');

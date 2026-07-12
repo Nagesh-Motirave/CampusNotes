@@ -6,7 +6,6 @@ import {
   LineChart, Line, PieChart, Pie, Cell,
 } from 'recharts';
 import StatCard from '../../components/admin/StatCard';
-import Leaderboard from '../../components/Leaderboard';
 import {
   getOverviewStats,
   getUploadDownloadStats,
@@ -21,7 +20,6 @@ import {
   getUserOverviewStats,
   getUsersByCollege,
   getRecentUsers,
-  getTopContributors,
   updateUserRole,
   getArchivedNotes,
   archiveNote,
@@ -85,7 +83,6 @@ const AdminDashboard = () => {
   const [userOverview, setUserOverview] = useState(null);
   const [usersByCollege, setUsersByCollege] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
-  const [topContributors, setTopContributors] = useState([]);
 
   const loadData = useCallback(async () => {
     setLoading(true);
@@ -108,7 +105,6 @@ const AdminDashboard = () => {
         getUserOverviewStats(),
         getUsersByCollege(),
         getRecentUsers(),
-        getTopContributors(),
       ]);
 
       setOverview(overviewData);
@@ -124,7 +120,6 @@ const AdminDashboard = () => {
       setUserOverview(userOverviewData);
       setUsersByCollege(Array.isArray(collegeData) ? collegeData : []);
       setRecentUsers(Array.isArray(recentUsersData) ? recentUsersData : []);
-      setTopContributors(Array.isArray(contributorsData) ? contributorsData : []);
     } catch (error) {
       console.error('Failed to load admin dashboard data:', error);
       toast.error(`Failed to load admin dashboard data: ${error.message || error}`);
@@ -278,7 +273,6 @@ const AdminDashboard = () => {
             <StatCard label="Total Students" value={fmt(userOverview?.totalUsers)} color="blue" />
             <StatCard label="Total Unique Colleges" value={fmt(usersByCollege?.length)} color="emerald" />
             <StatCard label="Total Approved Notes" value={fmt((overview?.totalUploads || 0) - (overview?.pendingApproval || 0))} color="primary" />
-            <StatCard label="Total User Points" value={fmt(userOverview?.totalPoints)} color="purple" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -447,7 +441,6 @@ const AdminDashboard = () => {
             <StatCard label="Total Students" value={fmt(userOverview?.totalUsers)} color="blue" />
             <StatCard label="Total Unique Colleges" value={fmt(usersByCollege?.length)} color="emerald" />
             <StatCard label="Total Approved Notes" value={fmt((overview?.totalUploads || 0) - (overview?.pendingApproval || 0))} color="primary" />
-            <StatCard label="Total User Points" value={fmt(userOverview?.totalPoints)} color="purple" />
           </div>
 
           <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -472,11 +465,6 @@ const AdminDashboard = () => {
               </ResponsiveContainer>
             </ChartCard>
 
-            <ChartCard title="Leaderboard">
-              <div className="space-y-2">
-                <Leaderboard limit={10} compact={true} />
-              </div>
-            </ChartCard>
           </div>
 
           <div className="glass-card overflow-hidden">
@@ -490,8 +478,6 @@ const AdminDashboard = () => {
                     <th className="px-5 py-3 text-left">Name</th>
                     <th className="px-5 py-3 text-left">Email</th>
                     <th className="px-5 py-3 text-left">College</th>
-                    <th className="px-5 py-3 text-left">Points</th>
-                    <th className="px-5 py-3 text-left">Rank</th>
                     <th className="px-5 py-3 text-left">Role</th>
                     <th className="px-5 py-3 text-left">Joined</th>
                   </tr>
@@ -502,8 +488,6 @@ const AdminDashboard = () => {
                       <td className="px-5 py-3 font-medium text-gray-900">{user.name}</td>
                       <td className="px-5 py-3 text-gray-600">{user.email}</td>
                       <td className="px-5 py-3 text-gray-600">{user.college || '—'}</td>
-                      <td className="px-5 py-3 text-gray-600">{user.points}</td>
-                      <td className="px-5 py-3 text-gray-600">#{user.rank}</td>
                       <td className="px-5 py-3">
                         <select
                           value={user.role || 'USER'}

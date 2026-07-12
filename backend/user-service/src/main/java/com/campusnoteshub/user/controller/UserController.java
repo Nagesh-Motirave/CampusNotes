@@ -1,6 +1,5 @@
 package com.campusnoteshub.user.controller;
 
-import com.campusnoteshub.user.dto.LeaderboardEntry;
 import com.campusnoteshub.user.dto.UserProfileResponse;
 import com.campusnoteshub.user.repository.UserRepository;
 import com.campusnoteshub.user.service.UserService;
@@ -31,11 +30,6 @@ public class UserController {
         return ResponseEntity.ok(userService.updateUserProfile(id, request));
     }
 
-    @GetMapping("/leaderboard")
-    public ResponseEntity<List<LeaderboardEntry>> getLeaderboard() {
-        return ResponseEntity.ok(userService.getLeaderboard());
-    }
-
     /** Public endpoint — returns total registered user count for the hero stats section. */
     @GetMapping("/count")
     public Long getUserCount() {
@@ -55,22 +49,6 @@ public class UserController {
     @PutMapping("/{id}/notifications/read")
     public ResponseEntity<Void> markNotificationsRead(@PathVariable String id) {
         userService.markNotificationsRead(id);
-        return ResponseEntity.ok().build();
-    }
-
-    // Internal endpoint called by other microservices (e.g. notes-service)
-    @PostMapping("/internal/{id}/points")
-    public ResponseEntity<Void> addPoints(@PathVariable String id, 
-                                          @RequestParam int points, 
-                                          @RequestParam String desc) {
-        userService.addPoints(id, points, desc);
-        return ResponseEntity.ok().build();
-    }
-
-    @PostMapping("/internal/{id}/points/set")
-    public ResponseEntity<Void> setPoints(@PathVariable String id, 
-                                          @RequestParam int points) {
-        userService.setPoints(id, points);
         return ResponseEntity.ok().build();
     }
 

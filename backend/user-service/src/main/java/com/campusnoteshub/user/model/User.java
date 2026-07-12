@@ -24,39 +24,14 @@ public class User {
     
     private String college;
     
-    private int points = 0;
-    
     private boolean verified = false;
 
     private String role = "USER";
     
     private LocalDateTime createdAt = LocalDateTime.now();
 
-    private LocalDateTime lastPointsUpdate = LocalDateTime.now();
-
-    // Gamification Activity Log
-    private List<ActivityLog> activity = new ArrayList<>();
-
     // Notifications
     private List<Notification> notifications = new ArrayList<>();
-
-    public static class ActivityLog {
-        private int points;
-        private String description;
-        private LocalDateTime date;
-
-        public ActivityLog() {}
-
-        public ActivityLog(int points, String description, LocalDateTime date) {
-            this.points = points;
-            this.description = description;
-            this.date = date;
-        }
-
-        public int getPoints() { return points; }
-        public String getDescription() { return description; }
-        public LocalDateTime getDate() { return date; }
-    }
 
     public static class Notification {
         private String id;
@@ -99,9 +74,6 @@ public class User {
     public String getCollege() { return college; }
     public void setCollege(String college) { this.college = college; }
 
-    public int getPoints() { return points; }
-    public void setPoints(int points) { this.points = points; }
-
     public boolean isVerified() { return verified; }
     public void setVerified(boolean verified) { this.verified = verified; }
 
@@ -111,12 +83,6 @@ public class User {
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }
 
-    public LocalDateTime getLastPointsUpdate() { return lastPointsUpdate; }
-    public void setLastPointsUpdate(LocalDateTime lastPointsUpdate) { this.lastPointsUpdate = lastPointsUpdate; }
-
-    public List<ActivityLog> getActivity() { return activity; }
-    public void addActivity(ActivityLog log) { this.activity.add(0, log); } // Add to start
-    
     public List<Notification> getNotifications() { return notifications; }
     public void addNotification(Notification notification) { this.notifications.add(0, notification); }
 }

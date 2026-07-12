@@ -285,14 +285,7 @@ public class NoteService {
         return pointsMap;
     }
 
-    public void recalculateAllPoints() {
-        // Find all distinct uploaders
-        List<String> uploaders = mongoTemplate.findDistinct(new Query(), "uploadedBy", Note.class, String.class);
-        for (String userId : uploaders) {
-            if (userId == null || userId.isEmpty()) continue;
-            recalculateUserPoints(userId);
-        }
-    }
+
 
     public NoteRequest createRequest(NoteRequestDTO dto, String userId, String userEmail) {
         NoteRequest req = new NoteRequest();
@@ -316,21 +309,6 @@ public class NoteService {
         req.setFulfilledBy(userId);
         
         return noteRequestRepository.save(req);
-    }
-
-    public void recalculateUserPoints(String userId) {
-        try {
-            Map<String, Object> stats = getUserStats(userId);
-            long uploaded = ((Number) stats.get("notesUploaded")).longValue();
-            int totalPoints = (int) (uploaded * 5);
-
-            String url = UriComponentsBuilder.fromHttpUrl(userServiceUrl + "/users/internal/" + userId + "/points/set")
-                    .queryParam("points", totalPoints)
-                    .toUriString();
-            restTemplate.postForEntity(url, null, Void.class);
-        } catch (Exception e) {
-            System.err.println("Failed to recalculate points for user " + userId + ": " + e.getMessage());
-        }
     }
 
     public void deleteNoteForUser(String noteId, String userId) {

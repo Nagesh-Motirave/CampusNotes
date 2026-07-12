@@ -92,12 +92,6 @@ public class NoteController {
         return ResponseEntity.ok(noteService.getUserStats(userId));
     }
 
-    @PostMapping("/internal/recalculate-points")
-    public ResponseEntity<Void> recalculatePoints() {
-        noteService.recalculateAllPoints();
-        return ResponseEntity.ok().build();
-    }
-
     @GetMapping("/internal/points-summary")
     public ResponseEntity<java.util.Map<String, Integer>> getPointsSummary() {
         return ResponseEntity.ok(noteService.getPointsSummary());
