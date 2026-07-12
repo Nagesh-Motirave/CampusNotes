@@ -54,8 +54,9 @@ public class UserService {
             System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
         }
 
+        LocalDateTime lastUpdate = user.getLastPointsUpdate() != null ? user.getLastPointsUpdate() : LocalDateTime.now();
         long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 
-                    userRepository.countByPointsEqualsAndLastPointsUpdateBefore(user.getPoints(), user.getLastPointsUpdate()) + 1;
+                    userRepository.countByPointsEqualsAndLastPointsUpdateBefore(user.getPoints(), lastUpdate) + 1;
 
         return new UserProfileResponse(
                 user.getId(),
