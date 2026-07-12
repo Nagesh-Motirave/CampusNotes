@@ -52,6 +52,13 @@ public class UserService {
             System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
         }
 
+<<<<<<< HEAD
+=======
+        LocalDateTime lastUpdate = user.getLastPointsUpdate() != null ? user.getLastPointsUpdate() : LocalDateTime.now();
+        long rank = userRepository.countByPointsGreaterThan(user.getPoints()) + 
+                    userRepository.countByPointsEqualsAndLastPointsUpdateBefore(user.getPoints(), lastUpdate) + 1;
+
+>>>>>>> 3af4d8f (admin data fix issue)
         return new UserProfileResponse(
                 user.getId(),
                 user.getName(),

@@ -81,6 +81,13 @@ public class AdminUserService {
                     entry.setName(u.getName());
                     entry.setEmail(u.getEmail());
                     entry.setCollege(u.getCollege());
+<<<<<<< HEAD
+=======
+                    entry.setPoints(u.getPoints());
+                    LocalDateTime lastUpdate = u.getLastPointsUpdate() != null ? u.getLastPointsUpdate() : LocalDateTime.now();
+                    entry.setRank(userRepository.countByPointsGreaterThan(u.getPoints()) + 
+                                  userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), lastUpdate) + 1);
+>>>>>>> 3af4d8f (admin data fix issue)
                     entry.setRole(u.getRole() != null ? u.getRole() : "USER");
                     entry.setCreatedAt(u.getCreatedAt().toString());
                     return entry;
@@ -88,6 +95,20 @@ public class AdminUserService {
                 .collect(Collectors.toList());
     }
 
+<<<<<<< HEAD
+=======
+    public List<AdminUserAnalyticsDTO.TopContributor> getTopContributors() {
+        return userRepository.findTop10ByOrderByPointsDescLastPointsUpdateAsc(org.springframework.data.domain.PageRequest.of(0, 10)).stream()
+                .map(u -> {
+                    LocalDateTime lastUpdate = u.getLastPointsUpdate() != null ? u.getLastPointsUpdate() : LocalDateTime.now();
+                    return new AdminUserAnalyticsDTO.TopContributor(
+                        u.getId(), u.getName(), u.getCollege(), u.getPoints(), 
+                        userRepository.countByPointsGreaterThan(u.getPoints()) + userRepository.countByPointsEqualsAndLastPointsUpdateBefore(u.getPoints(), lastUpdate) + 1);
+                })
+                .collect(Collectors.toList());
+    }
+
+>>>>>>> 3af4d8f (admin data fix issue)
     public User updateUserRole(String userId, String role) {
         User user = userRepository.findById(userId)
                 .orElseThrow(() -> new RuntimeException("User not found"));
