@@ -9,8 +9,6 @@ import java.util.List;
 
 @Repository
 public interface UserRepository extends MongoRepository<User, String> {
-    List<User> findTop10ByOrderByPointsDesc();
-
     List<User> findTop20ByOrderByCreatedAtDesc();
 
     long countByRole(String role);
