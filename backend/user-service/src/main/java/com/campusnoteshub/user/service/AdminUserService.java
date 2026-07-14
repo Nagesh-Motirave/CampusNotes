@@ -59,6 +59,9 @@ public class AdminUserService {
     }
 
     public List<AdminUserAnalyticsDTO.CollegeUserStat> getUsersByCollege() {
+        // Fix existing student data on-the-fly to ensure correct college counts
+        fixExistingStudentData();
+
         // Try aggregating by collegeId first (post-migration)
         Aggregation aggById = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("collegeId").ne(null).ne("")),
@@ -105,6 +108,26 @@ public class AdminUserService {
             ));
         }
         return stats;
+    }
+
+    private void fixExistingStudentData() {
+        List<User> users = userRepository.findAll();
+        for (User user : users) {
+            String college = user.getCollege();
+            if (college == null || college.trim().isEmpty()) continue;
+
+            String updatedCollege = college;
+            if ("DGOI".equalsIgnoreCase(college.trim()) || "Dattkala Group of Institute".equalsIgnoreCase(college.trim())) {
+                updatedCollege = "Dattkala Group of Institute Faculty of Engineering";
+            } else if ("GP Yavatmal".equalsIgnoreCase(college.trim())) {
+                updatedCollege = "Government Polytechnic, Yavatmal";
+            }
+
+            if (!updatedCollege.equals(college)) {
+                user.setCollege(updatedCollege);
+                userRepository.save(user);
+            }
+        }
     }
 
     public List<AdminUserAnalyticsDTO.RecentUser> getRecentUsers() {
