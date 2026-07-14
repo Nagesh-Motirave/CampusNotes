@@ -59,22 +59,17 @@ public class AdminUserService {
     }
 
     public List<AdminUserAnalyticsDTO.CollegeUserStat> getUsersByCollege() {
-        // Fix existing student data on-the-fly to ensure correct college counts
-        fixExistingStudentData();
+        List<AdminUserAnalyticsDTO.CollegeUserStat> rawStats = new ArrayList<>();
 
         // Try aggregating by collegeId first (post-migration)
         Aggregation aggById = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("collegeId").ne(null).ne("")),
-                Aggregation.group("collegeId")
-                        .count().as("userCount"),
-                Aggregation.sort(Sort.Direction.DESC, "userCount"),
-                Aggregation.limit(15)
+                Aggregation.group("collegeId").count().as("userCount")
         );
-        AggregationResults<Map> resultsByid = mongoTemplate.aggregate(aggById, "users", Map.class);
+        AggregationResults<Map> resultsById = mongoTemplate.aggregate(aggById, "users", Map.class);
 
-        if (!resultsByid.getMappedResults().isEmpty()) {
-            List<AdminUserAnalyticsDTO.CollegeUserStat> stats = new ArrayList<>();
-            for (Map doc : resultsByid.getMappedResults()) {
+        if (!resultsById.getMappedResults().isEmpty()) {
+            for (Map doc : resultsById.getMappedResults()) {
                 String collegeId = String.valueOf(doc.get("_id"));
                 String collegeName = collegeId;
                 // Resolve official name from colleges collection
@@ -85,49 +80,52 @@ public class AdminUserService {
                 AdminUserAnalyticsDTO.CollegeUserStat stat = new AdminUserAnalyticsDTO.CollegeUserStat(
                         collegeName, toLong(doc.get("userCount")));
                 stat.setCollegeId(collegeId);
-                stats.add(stat);
+                rawStats.add(stat);
             }
-            return stats;
-        }
+        } else {
+            // Fallback: aggregate by raw college string (pre-migration)
+            Aggregation agg = Aggregation.newAggregation(
+                    Aggregation.match(Criteria.where("college").ne(null).ne("")),
+                    Aggregation.group("college").count().as("userCount")
+            );
+            AggregationResults<Map> results = mongoTemplate.aggregate(agg, "users", Map.class);
 
-        // Fallback: aggregate by raw college string (pre-migration)
-        Aggregation agg = Aggregation.newAggregation(
-                Aggregation.match(Criteria.where("college").ne(null).ne("")),
-                Aggregation.group("college")
-                        .count().as("userCount"),
-                Aggregation.sort(Sort.Direction.DESC, "userCount"),
-                Aggregation.limit(15)
-        );
-        AggregationResults<Map> results = mongoTemplate.aggregate(agg, "users", Map.class);
-
-        List<AdminUserAnalyticsDTO.CollegeUserStat> stats = new ArrayList<>();
-        for (Map doc : results.getMappedResults()) {
-            stats.add(new AdminUserAnalyticsDTO.CollegeUserStat(
-                    String.valueOf(doc.get("_id")),
-                    toLong(doc.get("userCount"))
-            ));
-        }
-        return stats;
-    }
-
-    private void fixExistingStudentData() {
-        List<User> users = userRepository.findAll();
-        for (User user : users) {
-            String college = user.getCollege();
-            if (college == null || college.trim().isEmpty()) continue;
-
-            String updatedCollege = college;
-            if ("DGOI".equalsIgnoreCase(college.trim()) || "Dattkala Group of Institute".equalsIgnoreCase(college.trim())) {
-                updatedCollege = "Dattkala Group of Institute Faculty of Engineering";
-            } else if ("GP Yavatmal".equalsIgnoreCase(college.trim())) {
-                updatedCollege = "Government Polytechnic, Yavatmal";
-            }
-
-            if (!updatedCollege.equals(college)) {
-                user.setCollege(updatedCollege);
-                userRepository.save(user);
+            for (Map doc : results.getMappedResults()) {
+                rawStats.add(new AdminUserAnalyticsDTO.CollegeUserStat(
+                        String.valueOf(doc.get("_id")),
+                        toLong(doc.get("userCount"))
+                ));
             }
         }
+
+        // Apply in-memory mapping to merge duplicates
+        Map<String, AdminUserAnalyticsDTO.CollegeUserStat> mergedStats = new java.util.HashMap<>();
+        for (AdminUserAnalyticsDTO.CollegeUserStat stat : rawStats) {
+            String name = stat.getCollege();
+            if (name != null) {
+                if (name.equalsIgnoreCase("DGOI") || name.equalsIgnoreCase("Dattkala Group of Institute")) {
+                    name = "Dattkala Group of Institute Faculty of Engineering";
+                } else if (name.equalsIgnoreCase("GP Yavatmal")) {
+                    name = "Government Polytechnic, Yavatmal";
+                }
+            }
+
+            if (mergedStats.containsKey(name)) {
+                AdminUserAnalyticsDTO.CollegeUserStat existing = mergedStats.get(name);
+                existing.setUserCount(existing.getUserCount() + stat.getUserCount());
+                if (existing.getCollegeId() == null && stat.getCollegeId() != null) {
+                    existing.setCollegeId(stat.getCollegeId());
+                }
+            } else {
+                stat.setCollege(name);
+                mergedStats.put(name, stat);
+            }
+        }
+
+        return mergedStats.values().stream()
+                .sorted((a, b) -> Long.compare(b.getUserCount(), a.getUserCount()))
+                .limit(15)
+                .collect(Collectors.toList());
     }
 
     public List<AdminUserAnalyticsDTO.RecentUser> getRecentUsers() {
