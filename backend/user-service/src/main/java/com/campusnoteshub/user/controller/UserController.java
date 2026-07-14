@@ -33,7 +33,7 @@ public class UserController {
     /** Public endpoint — returns total registered user count for the hero stats section. */
     @GetMapping("/count")
     public Long getUserCount() {
-        return userRepository.count();
+        return userRepository.countByRole("USER");
     }
 
 

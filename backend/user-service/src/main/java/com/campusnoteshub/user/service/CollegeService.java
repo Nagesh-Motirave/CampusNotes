@@ -166,7 +166,7 @@ public class CollegeService {
 
     /** Get the total number of unique colleges from the colleges collection. */
     public long getCollegesCount() {
-        return collegeRepository.count();
+        return collegeRepository.findByStatusIgnoreCase("Verified").size();
     }
 
     // ── Admin: Approve ─────────────────────────────────────────────────
