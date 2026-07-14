@@ -7,6 +7,7 @@ import { getNotes } from '../api/notes';
 import { ProfileSkeleton } from '../components/LoadingSkeleton';
 import { calculateContributionScore, calculateBadges } from '../utils/achievementUtils';
 import NoteCard from '../components/NoteCard';
+import CollegeAutocomplete from '../components/CollegeAutocomplete';
 
 const Profile = () => {
   const { user, isAdmin } = useAuth();
@@ -21,11 +22,15 @@ const Profile = () => {
 
   // Edit Profile State
   const [isEditing, setIsEditing] = useState(false);
-  const [editForm, setEditForm] = useState({ name: '', college: '' });
+  const [editForm, setEditForm] = useState({ name: '', college: '', collegeId: null });
   const [isSaving, setIsSaving] = useState(false);
 
   const handleEditClick = () => {
-    setEditForm({ name: profile?.name || user?.name || '', college: profile?.college || user?.college || '' });
+    setEditForm({
+      name: profile?.name || user?.name || '',
+      college: profile?.college || user?.college || '',
+      collegeId: profile?.collegeId || user?.collegeId || null,
+    });
     setIsEditing(true);
   };
 
@@ -33,7 +38,11 @@ const Profile = () => {
     e.preventDefault();
     try {
       setIsSaving(true);
-      await updateUserProfile(user.id, editForm);
+      const updateData = { name: editForm.name, college: editForm.college };
+      if (editForm.collegeId) {
+        updateData.collegeId = editForm.collegeId;
+      }
+      await updateUserProfile(user.id, updateData);
       await fetchProfileData();
       setIsEditing(false);
     } catch (err) {
@@ -266,12 +275,11 @@ const Profile = () => {
               </div>
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1">College</label>
-                <input 
-                  type="text" 
-                  value={editForm.college} 
-                  onChange={(e) => setEditForm({...editForm, college: e.target.value})}
-                  className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 focus:border-primary-500 transition-all"
-                  required
+                <CollegeAutocomplete
+                  inputId="profile-edit-college"
+                  value={editForm.college}
+                  placeholder="Search or type college name"
+                  onChange={({ name, id }) => setEditForm({ ...editForm, college: name, collegeId: id })}
                 />
               </div>
               <div className="flex gap-3 justify-end mt-6">

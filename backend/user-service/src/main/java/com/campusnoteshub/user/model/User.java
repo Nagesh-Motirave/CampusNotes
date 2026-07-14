@@ -23,6 +23,8 @@ public class User {
     private String passwordHash;
     
     private String college;
+
+    private String collegeId;
     
     private boolean verified = false;
 
@@ -73,6 +75,9 @@ public class User {
 
     public String getCollege() { return college; }
     public void setCollege(String college) { this.college = college; }
+
+    public String getCollegeId() { return collegeId; }
+    public void setCollegeId(String collegeId) { this.collegeId = collegeId; }
 
     public boolean isVerified() { return verified; }
     public void setVerified(boolean verified) { this.verified = verified; }

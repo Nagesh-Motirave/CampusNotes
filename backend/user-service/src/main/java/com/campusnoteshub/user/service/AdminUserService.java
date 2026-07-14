@@ -1,7 +1,9 @@
 package com.campusnoteshub.user.service;
 
 import com.campusnoteshub.user.dto.AdminUserAnalyticsDTO;
+import com.campusnoteshub.user.model.College;
 import com.campusnoteshub.user.model.User;
+import com.campusnoteshub.user.repository.CollegeRepository;
 import com.campusnoteshub.user.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.data.domain.Sort;
@@ -35,6 +37,9 @@ public class AdminUserService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private CollegeRepository collegeRepository;
+
     @Value("${NOTES_SERVICE_URL:https://notes-service-production-ca2c.up.railway.app}")
     private String notesServiceUrl;
 
@@ -54,6 +59,35 @@ public class AdminUserService {
     }
 
     public List<AdminUserAnalyticsDTO.CollegeUserStat> getUsersByCollege() {
+        // Try aggregating by collegeId first (post-migration)
+        Aggregation aggById = Aggregation.newAggregation(
+                Aggregation.match(Criteria.where("collegeId").ne(null).ne("")),
+                Aggregation.group("collegeId")
+                        .count().as("userCount"),
+                Aggregation.sort(Sort.Direction.DESC, "userCount"),
+                Aggregation.limit(15)
+        );
+        AggregationResults<Map> resultsByid = mongoTemplate.aggregate(aggById, "users", Map.class);
+
+        if (!resultsByid.getMappedResults().isEmpty()) {
+            List<AdminUserAnalyticsDTO.CollegeUserStat> stats = new ArrayList<>();
+            for (Map doc : resultsByid.getMappedResults()) {
+                String collegeId = String.valueOf(doc.get("_id"));
+                String collegeName = collegeId;
+                // Resolve official name from colleges collection
+                java.util.Optional<College> college = collegeRepository.findById(collegeId);
+                if (college.isPresent()) {
+                    collegeName = college.get().getOfficialName();
+                }
+                AdminUserAnalyticsDTO.CollegeUserStat stat = new AdminUserAnalyticsDTO.CollegeUserStat(
+                        collegeName, toLong(doc.get("userCount")));
+                stat.setCollegeId(collegeId);
+                stats.add(stat);
+            }
+            return stats;
+        }
+
+        // Fallback: aggregate by raw college string (pre-migration)
         Aggregation agg = Aggregation.newAggregation(
                 Aggregation.match(Criteria.where("college").ne(null).ne("")),
                 Aggregation.group("college")

@@ -43,6 +43,7 @@ public class AdminUserAnalyticsDTO {
 
     public static class CollegeUserStat {
         private String college;
+        private String collegeId;
         private long userCount;
 
         public CollegeUserStat() {}
@@ -54,6 +55,9 @@ public class AdminUserAnalyticsDTO {
 
         public String getCollege() { return college; }
         public void setCollege(String college) { this.college = college; }
+
+        public String getCollegeId() { return collegeId; }
+        public void setCollegeId(String collegeId) { this.collegeId = collegeId; }
 
         public long getUserCount() { return userCount; }
         public void setUserCount(long userCount) { this.userCount = userCount; }

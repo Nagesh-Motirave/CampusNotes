@@ -3,7 +3,8 @@ import { Link, useNavigate } from 'react-router-dom';
 import { useForm } from 'react-hook-form';
 import toast from 'react-hot-toast';
 import { useAuth } from '../context/AuthContext';
-import { FiEye, FiEyeOff, FiMail, FiLock, FiUser, FiBookOpen } from 'react-icons/fi';
+import { FiEye, FiEyeOff, FiMail, FiLock, FiUser } from 'react-icons/fi';
+import CollegeAutocomplete from '../components/CollegeAutocomplete';
 
 /**
  * Register Page — card-based form with name, email, password, college.
@@ -15,12 +16,14 @@ const Register = () => {
   const [loading, setLoading] = useState(false);
   const [showPassword, setShowPassword] = useState(false);
   const [showConfirmPassword, setShowConfirmPassword] = useState(false);
+  const [selectedCollegeId, setSelectedCollegeId] = useState(null);
 
   const {
     register,
     handleSubmit,
     formState: { errors },
     watch,
+    setValue,
   } = useForm();
 
   // Redirect if already logged in
@@ -120,25 +123,28 @@ const Register = () => {
               {errors.email && <p className="text-red-500 text-xs mt-1">{errors.email.message}</p>}
             </div>
 
-            {/* College */}
+            {/* College — Searchable Autocomplete */}
             <div>
               <label htmlFor="register-college" className="block text-sm font-medium text-gray-700 mb-1.5">
                 College name
               </label>
-              <div className="relative">
-                <div className="absolute inset-y-0 left-0 pl-3.5 flex items-center pointer-events-none">
-                  <FiBookOpen className="w-4.5 h-4.5 text-gray-400" />
-                </div>
-                <input
-                  id="register-college"
-                  type="text"
-                  className={`input-field pl-10 ${errors.college ? 'border-red-400 focus:ring-red-500' : ''}`}
-                  placeholder="e.g. VJTI Mumbai"
-                  {...register('college', {
-                    required: 'College name is required',
-                  })}
-                />
-              </div>
+              <CollegeAutocomplete
+                inputId="register-college"
+                value={watch('college') || ''}
+                placeholder="e.g. VJTI Mumbai"
+                error={!!errors.college}
+                onChange={({ name, id }) => {
+                  setValue('college', name, { shouldValidate: true });
+                  setSelectedCollegeId(id);
+                }}
+              />
+              {/* Hidden field for React Hook Form validation */}
+              <input
+                type="hidden"
+                {...register('college', {
+                  required: 'College name is required',
+                })}
+              />
               {errors.college && <p className="text-red-500 text-xs mt-1">{errors.college.message}</p>}
             </div>
 

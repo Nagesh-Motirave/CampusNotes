@@ -5,6 +5,7 @@ import toast from 'react-hot-toast';
 import { uploadFile } from '../api/upload';
 import { uploadNote, getDistinctValues } from '../api/notes';
 import { useAuth } from '../context/AuthContext';
+import CollegeAutocomplete from '../components/CollegeAutocomplete';
 
 /**
  * Upload Notes Page — Protected route.
@@ -23,6 +24,7 @@ const UploadNote = () => {
     register,
     handleSubmit,
     watch,
+    setValue,
     formState: { errors },
   } = useForm();
   
@@ -306,16 +308,19 @@ const UploadNote = () => {
                 <label htmlFor="upload-college" className="block text-sm font-medium text-gray-700 mb-1.5">
                   College *
                 </label>
-                <input
-                  id="upload-college"
-                  list="colleges-list"
-                  className={`input-field ${errors.college ? 'border-red-400' : ''}`}
+                <CollegeAutocomplete
+                  inputId="upload-college"
+                  value={watch('college') || ''}
                   placeholder="Select or type College"
+                  error={!!errors.college}
+                  onChange={({ name }) => {
+                    setValue('college', name, { shouldValidate: true });
+                  }}
+                />
+                <input
+                  type="hidden"
                   {...register('college', { required: 'College is required' })}
                 />
-                <datalist id="colleges-list">
-                  {options.colleges.map(c => <option key={c} value={c} />)}
-                </datalist>
                 {errors.college && <p className="text-red-500 text-xs mt-1">{errors.college.message}</p>}
               </div>
             </div>

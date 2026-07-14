@@ -17,6 +17,7 @@ import org.springframework.data.mongodb.core.query.Query;
 import java.time.LocalDateTime;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 
 @Service
 public class UserService {
@@ -32,6 +33,9 @@ public class UserService {
 
     @Value("${notes-service.url}")
     private String notesServiceUrl;
+
+    @Autowired
+    private CollegeService collegeService;
 
     public UserProfileResponse getUserProfile(String userId) {
         User user = userRepository.findById(userId)
@@ -53,11 +57,21 @@ public class UserService {
         }
 
 
+        // Resolve college name: prefer collegeId lookup, fallback to raw string
+        String collegeName = user.getCollege();
+        if (user.getCollegeId() != null) {
+            Optional<com.campusnoteshub.user.model.College> college = collegeService.getCollegeById(user.getCollegeId());
+            if (college.isPresent()) {
+                collegeName = college.get().getOfficialName();
+            }
+        }
+
         return new UserProfileResponse(
                 user.getId(),
                 user.getName(),
                 user.getEmail(),
-                user.getCollege(),
+                collegeName,
+                user.getCollegeId(),
                 user.getRole(),
                 stats
         );
@@ -72,6 +86,20 @@ public class UserService {
         }
         if (request.getCollege() != null && !request.getCollege().trim().isEmpty()) {
             user.setCollege(request.getCollege());
+            // Resolve college to get/create collegeId
+            com.campusnoteshub.user.model.College college = collegeService.findOrCreateCollege(request.getCollege());
+            if (college != null) {
+                user.setCollegeId(college.getId());
+            }
+        }
+        // If collegeId is provided directly (from autocomplete selection), use it
+        if (request.getCollegeId() != null && !request.getCollegeId().trim().isEmpty()) {
+            user.setCollegeId(request.getCollegeId());
+            // Also update the display name
+            Optional<com.campusnoteshub.user.model.College> college = collegeService.getCollegeById(request.getCollegeId());
+            if (college.isPresent()) {
+                user.setCollege(college.get().getOfficialName());
+            }
         }
         
         userRepository.save(user);
@@ -83,6 +111,12 @@ public class UserService {
     }
 
     public long getCollegesCount() {
+        // Use the colleges collection for accurate, de-duplicated count
+        long collegesMasterCount = collegeService.getCollegesCount();
+        if (collegesMasterCount > 0) {
+            return collegesMasterCount;
+        }
+        // Fallback to legacy distinct count if migration hasn't run yet
         Query query = new Query();
         query.addCriteria(Criteria.where("college").exists(true).ne("").ne(null));
         List<String> colleges = mongoTemplate.findDistinct(query, "college", User.class, String.class);

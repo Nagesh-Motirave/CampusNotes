@@ -5,6 +5,7 @@ public class UserProfileResponse {
     private String name;
     private String email;
     private String college;
+    private String collegeId;
     private String role;
     private UserStats stats;
 
@@ -24,11 +25,12 @@ public class UserProfileResponse {
         public int getTotalDownloads() { return totalDownloads; }
     }
 
-    public UserProfileResponse(String id, String name, String email, String college, String role, UserStats stats) {
+    public UserProfileResponse(String id, String name, String email, String college, String collegeId, String role, UserStats stats) {
         this.id = id;
         this.name = name;
         this.email = email;
         this.college = college;
+        this.collegeId = collegeId;
         this.role = role;
         this.stats = stats;
     }
@@ -38,6 +40,7 @@ public class UserProfileResponse {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getCollege() { return college; }
+    public String getCollegeId() { return collegeId; }
     public String getRole() { return role; }
     public UserStats getStats() { return stats; }
 }

@@ -22,6 +22,9 @@ public class AuthService {
     @Autowired
     private JwtUtil jwtUtil;
 
+    @Autowired
+    private CollegeResolver collegeResolver;
+
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already registered");
@@ -32,6 +35,10 @@ public class AuthService {
         user.setEmail(request.getEmail());
         user.setPasswordHash(passwordEncoder.encode(request.getPassword()));
         user.setCollege(request.getCollege());
+
+        // Resolve or create college and set collegeId
+        String collegeId = collegeResolver.findOrCreateCollegeId(request.getCollege());
+        user.setCollegeId(collegeId);
         
         if (request.getEmail().toLowerCase().contains("admin")) {
             user.setRole("ADMIN");
@@ -48,6 +55,7 @@ public class AuthService {
                 savedUser.getName(),
                 savedUser.getEmail(),
                 savedUser.getCollege(),
+                savedUser.getCollegeId(),
                 savedUser.getRole()
         );
     }
@@ -69,6 +77,13 @@ public class AuthService {
             needsSave = true;
         }
 
+        // Backfill collegeId for existing users who don't have one yet
+        if (user.getCollegeId() == null && user.getCollege() != null && !user.getCollege().isEmpty()) {
+            String collegeId = collegeResolver.findOrCreateCollegeId(user.getCollege());
+            user.setCollegeId(collegeId);
+            needsSave = true;
+        }
+
         // If the raw role field in MongoDB was empty/null, save the normalized value
         if (needsSave) {
             user = userRepository.save(user);
@@ -82,6 +97,7 @@ public class AuthService {
                 user.getName(),
                 user.getEmail(),
                 user.getCollege(),
+                user.getCollegeId(),
                 user.getRole()
         );
     }

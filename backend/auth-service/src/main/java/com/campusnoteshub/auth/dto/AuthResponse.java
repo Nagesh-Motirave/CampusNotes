@@ -6,14 +6,16 @@ public class AuthResponse {
     private String name;
     private String email;
     private String college;
+    private String collegeId;
     private String role;
 
-    public AuthResponse(String token, String id, String name, String email, String college, String role) {
+    public AuthResponse(String token, String id, String name, String email, String college, String collegeId, String role) {
         this.token = token;
         this.id = id;
         this.name = name;
         this.email = email;
         this.college = college;
+        this.collegeId = collegeId;
         this.role = role;
     }
 
@@ -23,5 +25,6 @@ public class AuthResponse {
     public String getName() { return name; }
     public String getEmail() { return email; }
     public String getCollege() { return college; }
+    public String getCollegeId() { return collegeId; }
     public String getRole() { return role; }
 }

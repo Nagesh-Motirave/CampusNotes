@@ -111,6 +111,11 @@ public class JwtAuthFilter implements GlobalFilter, Ordered {
         if ("/users/count".equals(path) && "GET".equalsIgnoreCase(method)) {
             return true;
         }
+        // Allow GET /users/colleges/search and /users/colleges/count without authentication
+        // (needed for registration form autocomplete and home page stats)
+        if (path.startsWith("/users/colleges/") && "GET".equalsIgnoreCase(method)) {
+            return true;
+        }
         return false;
     }
 

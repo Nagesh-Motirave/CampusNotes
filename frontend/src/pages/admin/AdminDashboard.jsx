@@ -26,12 +26,21 @@ import {
   restoreNote,
   permanentlyDeleteNote,
 } from '../../api/admin';
+import {
+  getAllColleges as fetchAllColleges,
+  getPendingColleges as fetchPendingColleges,
+  approveCollege as apiApproveCollege,
+  updateCollege as apiUpdateCollege,
+  mergeColleges as apiMergeColleges,
+  triggerCollegeMigration,
+} from '../../api/colleges';
 
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'pending', label: 'Pending Approval' },
   { id: 'archived', label: 'Archived Resources' },
   { id: 'users', label: 'Users' },
+  { id: 'colleges', label: 'Colleges' },
   { id: 'analytics', label: 'Analytics' },
   { id: 'activity', label: 'Activity' },
 ];
@@ -84,6 +93,17 @@ const AdminDashboard = () => {
   const [usersByCollege, setUsersByCollege] = useState([]);
   const [recentUsers, setRecentUsers] = useState([]);
 
+  // College management state
+  const [allColleges, setAllColleges] = useState([]);
+  const [pendingColleges, setPendingColleges] = useState([]);
+  const [editingCollege, setEditingCollege] = useState(null);
+  const [editCollegeForm, setEditCollegeForm] = useState({ officialName: '', shortName: '', aliases: '' });
+  const [mergeModal, setMergeModal] = useState({ open: false, targetId: null, targetName: '' });
+  const [mergeTargetId, setMergeTargetId] = useState('');
+  const [collegeSearchFilter, setCollegeSearchFilter] = useState('');
+  const [migrationResult, setMigrationResult] = useState(null);
+  const [migrateLoading, setMigrateLoading] = useState(false);
+
   const loadData = useCallback(async () => {
     setLoading(true);
     try {
@@ -128,7 +148,17 @@ const AdminDashboard = () => {
     }
   }, []);
 
-  useEffect(() => { loadData(); }, [loadData]);
+  useEffect(() => {
+    loadData();
+    // Load college data separately
+    Promise.all([
+      fetchAllColleges().catch(() => []),
+      fetchPendingColleges().catch(() => []),
+    ]).then(([all, pend]) => {
+      setAllColleges(Array.isArray(all) ? all : []);
+      setPendingColleges(Array.isArray(pend) ? pend : []);
+    });
+  }, [loadData]);
 
   const handleApprove = async (id) => {
     setApproving(id);
@@ -605,6 +635,328 @@ const AdminDashboard = () => {
               </div>
             ))}
           </div>
+        </div>
+      )}
+
+      {/* Colleges Tab */}
+      {activeTab === 'colleges' && (
+        <div className="space-y-6">
+          {/* Stats */}
+          <div className="grid grid-cols-1 sm:grid-cols-3 gap-4">
+            <StatCard label="Total Colleges" value={fmt(allColleges.length)} color="blue" />
+            <StatCard label="Verified" value={fmt(allColleges.filter(c => c.status === 'Verified').length)} color="emerald" />
+            <StatCard label="Pending" value={fmt(pendingColleges.length)} color="amber" />
+          </div>
+
+          {/* Migration Section */}
+          <div className="glass-card p-5">
+            <div className="flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">Data Migration</h3>
+                <p className="text-sm text-gray-500">Scan existing user data, group duplicates, and create college records.</p>
+              </div>
+              <button
+                onClick={async () => {
+                  if (!window.confirm('This will scan all existing users and create/update college records. This is safe and additive-only (no data is deleted). Proceed?')) return;
+                  setMigrateLoading(true);
+                  try {
+                    const result = await triggerCollegeMigration();
+                    setMigrationResult(result);
+                    toast.success(`Migration complete: ${result.collegesCreated} colleges created, ${result.usersUpdated} users updated`);
+                    // Reload college data
+                    const [all, pend] = await Promise.all([fetchAllColleges().catch(() => []), fetchPendingColleges().catch(() => [])]);
+                    setAllColleges(Array.isArray(all) ? all : []);
+                    setPendingColleges(Array.isArray(pend) ? pend : []);
+                  } catch (err) {
+                    toast.error('Migration failed: ' + (err.response?.data?.message || err.message));
+                  } finally {
+                    setMigrateLoading(false);
+                  }
+                }}
+                disabled={migrateLoading}
+                className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium text-sm transition-colors disabled:opacity-50 flex items-center gap-2"
+              >
+                {migrateLoading ? (
+                  <><div className="w-4 h-4 border-2 border-white/30 border-t-white rounded-full animate-spin" /> Running...</>
+                ) : 'Run Migration'}
+              </button>
+            </div>
+            {migrationResult && (
+              <div className="mt-4 p-4 bg-green-50 border border-green-200 rounded-xl text-sm">
+                <p><strong>Distinct strings found:</strong> {migrationResult.totalDistinctStrings}</p>
+                <p><strong>Unique colleges after grouping:</strong> {migrationResult.uniqueCollegesAfterGrouping}</p>
+                <p><strong>Colleges created:</strong> {migrationResult.collegesCreated}</p>
+                <p><strong>Users updated:</strong> {migrationResult.usersUpdated}</p>
+              </div>
+            )}
+          </div>
+
+          {/* Pending Colleges */}
+          {pendingColleges.length > 0 && (
+            <div className="glass-card overflow-hidden">
+              <div className="px-5 py-4 border-b border-gray-100">
+                <h3 className="font-semibold text-gray-900">Pending Colleges ({pendingColleges.length})</h3>
+                <p className="text-sm text-gray-500">Review and approve newly added colleges</p>
+              </div>
+              <div className="divide-y divide-gray-50">
+                {pendingColleges.map((college) => (
+                  <div key={college.id} className="px-5 py-3 flex items-center justify-between hover:bg-gray-50">
+                    <div>
+                      <p className="text-sm font-medium text-gray-900">{college.officialName}</p>
+                      <p className="text-xs text-gray-400">
+                        {college.shortName !== college.officialName && college.shortName}
+                        {college.aliases?.length > 0 && ` · Aliases: ${college.aliases.join(', ')}`}
+                      </p>
+                    </div>
+                    <div className="flex gap-2">
+                      <button
+                        onClick={async () => {
+                          try {
+                            await apiApproveCollege(college.id);
+                            toast.success('College approved');
+                            setPendingColleges(prev => prev.filter(c => c.id !== college.id));
+                            setAllColleges(prev => prev.map(c => c.id === college.id ? { ...c, status: 'Verified' } : c));
+                          } catch (err) {
+                            toast.error('Failed to approve: ' + (err.message || err));
+                          }
+                        }}
+                        className="px-3 py-1.5 bg-green-600 hover:bg-green-700 text-white rounded-lg text-xs font-medium transition-colors"
+                      >
+                        Approve
+                      </button>
+                      <button
+                        onClick={() => {
+                          setEditingCollege(college);
+                          setEditCollegeForm({
+                            officialName: college.officialName || '',
+                            shortName: college.shortName || '',
+                            aliases: (college.aliases || []).join(', '),
+                          });
+                        }}
+                        className="px-3 py-1.5 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded-lg text-xs font-medium transition-colors"
+                      >
+                        Edit
+                      </button>
+                    </div>
+                  </div>
+                ))}
+              </div>
+            </div>
+          )}
+
+          {/* All Colleges Table */}
+          <div className="glass-card overflow-hidden">
+            <div className="px-5 py-4 border-b border-gray-100 flex items-center justify-between">
+              <div>
+                <h3 className="font-semibold text-gray-900">All Colleges ({allColleges.length})</h3>
+              </div>
+              <input
+                type="text"
+                placeholder="Filter colleges..."
+                value={collegeSearchFilter}
+                onChange={(e) => setCollegeSearchFilter(e.target.value)}
+                className="px-3 py-1.5 border border-gray-200 rounded-lg text-sm focus:ring-2 focus:ring-primary-500 w-64"
+              />
+            </div>
+            <div className="overflow-x-auto max-h-[500px] overflow-y-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 sticky top-0">
+                  <tr>
+                    <th className="text-left px-5 py-3 font-semibold text-gray-600">Official Name</th>
+                    <th className="text-left px-5 py-3 font-semibold text-gray-600">Short Name</th>
+                    <th className="text-left px-5 py-3 font-semibold text-gray-600">Aliases</th>
+                    <th className="text-left px-5 py-3 font-semibold text-gray-600">Status</th>
+                    <th className="text-right px-5 py-3 font-semibold text-gray-600">Actions</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-50">
+                  {allColleges
+                    .filter(c => !collegeSearchFilter || c.officialName?.toLowerCase().includes(collegeSearchFilter.toLowerCase()) || c.shortName?.toLowerCase().includes(collegeSearchFilter.toLowerCase()))
+                    .map((college) => (
+                    <tr key={college.id} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 font-medium text-gray-900">{college.officialName}</td>
+                      <td className="px-5 py-3 text-gray-600">{college.shortName}</td>
+                      <td className="px-5 py-3 text-gray-400 text-xs max-w-xs truncate">{(college.aliases || []).join(', ')}</td>
+                      <td className="px-5 py-3">
+                        <span className={`text-xs font-bold uppercase px-2 py-1 rounded ${college.status === 'Verified' ? 'bg-green-100 text-green-700' : 'bg-amber-100 text-amber-700'}`}>
+                          {college.status}
+                        </span>
+                      </td>
+                      <td className="px-5 py-3 text-right">
+                        <div className="flex gap-1.5 justify-end">
+                          <button
+                            onClick={() => {
+                              setEditingCollege(college);
+                              setEditCollegeForm({
+                                officialName: college.officialName || '',
+                                shortName: college.shortName || '',
+                                aliases: (college.aliases || []).join(', '),
+                              });
+                            }}
+                            className="px-2 py-1 bg-gray-100 hover:bg-gray-200 text-gray-700 rounded text-xs font-medium transition-colors"
+                          >
+                            Edit
+                          </button>
+                          <button
+                            onClick={() => setMergeModal({ open: true, targetId: college.id, targetName: college.officialName })}
+                            className="px-2 py-1 bg-purple-100 hover:bg-purple-200 text-purple-700 rounded text-xs font-medium transition-colors"
+                          >
+                            Merge Into
+                          </button>
+                          {college.status !== 'Verified' && (
+                            <button
+                              onClick={async () => {
+                                try {
+                                  await apiApproveCollege(college.id);
+                                  toast.success('College approved');
+                                  setAllColleges(prev => prev.map(c => c.id === college.id ? { ...c, status: 'Verified' } : c));
+                                  setPendingColleges(prev => prev.filter(c => c.id !== college.id));
+                                } catch (err) {
+                                  toast.error('Failed to approve');
+                                }
+                              }}
+                              className="px-2 py-1 bg-green-100 hover:bg-green-200 text-green-700 rounded text-xs font-medium transition-colors"
+                            >
+                              Approve
+                            </button>
+                          )}
+                        </div>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          </div>
+
+          {/* Edit College Modal */}
+          {editingCollege && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                <h2 className="text-xl font-bold text-gray-900 mb-4">Edit College</h2>
+                <form
+                  onSubmit={async (e) => {
+                    e.preventDefault();
+                    try {
+                      const aliasArray = editCollegeForm.aliases
+                        .split(',')
+                        .map(a => a.trim())
+                        .filter(Boolean);
+                      await apiUpdateCollege(editingCollege.id, {
+                        officialName: editCollegeForm.officialName,
+                        shortName: editCollegeForm.shortName,
+                        aliases: aliasArray,
+                      });
+                      toast.success('College updated');
+                      setAllColleges(prev => prev.map(c => c.id === editingCollege.id ? {
+                        ...c,
+                        officialName: editCollegeForm.officialName,
+                        shortName: editCollegeForm.shortName,
+                        aliases: aliasArray,
+                      } : c));
+                      setEditingCollege(null);
+                    } catch (err) {
+                      toast.error('Update failed: ' + (err.message || err));
+                    }
+                  }}
+                  className="space-y-4"
+                >
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Official Name</label>
+                    <input
+                      type="text"
+                      value={editCollegeForm.officialName}
+                      onChange={(e) => setEditCollegeForm({ ...editCollegeForm, officialName: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 transition-all"
+                      required
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Short Name</label>
+                    <input
+                      type="text"
+                      value={editCollegeForm.shortName}
+                      onChange={(e) => setEditCollegeForm({ ...editCollegeForm, shortName: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 transition-all"
+                    />
+                  </div>
+                  <div>
+                    <label className="block text-sm font-medium text-gray-700 mb-1">Aliases (comma-separated)</label>
+                    <input
+                      type="text"
+                      value={editCollegeForm.aliases}
+                      onChange={(e) => setEditCollegeForm({ ...editCollegeForm, aliases: e.target.value })}
+                      className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 transition-all"
+                      placeholder="e.g. DGOI, D.G.O.I."
+                    />
+                  </div>
+                  <div className="flex gap-3 justify-end mt-6">
+                    <button type="button" onClick={() => setEditingCollege(null)} className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors">
+                      Cancel
+                    </button>
+                    <button type="submit" className="px-4 py-2 bg-primary-600 hover:bg-primary-700 text-white rounded-lg font-medium transition-colors">
+                      Save Changes
+                    </button>
+                  </div>
+                </form>
+              </div>
+            </div>
+          )}
+
+          {/* Merge Modal */}
+          {mergeModal.open && (
+            <div className="fixed inset-0 bg-black/50 backdrop-blur-sm z-50 flex items-center justify-center p-4">
+              <div className="bg-white rounded-2xl p-6 max-w-md w-full shadow-2xl">
+                <h2 className="text-xl font-bold text-gray-900 mb-2">Merge Duplicate</h2>
+                <p className="text-sm text-gray-500 mb-4">
+                  Merge another college <strong>into</strong> <span className="text-primary-600 font-semibold">{mergeModal.targetName}</span>.
+                  All students from the duplicate will be moved to this college.
+                </p>
+                <div>
+                  <label className="block text-sm font-medium text-gray-700 mb-1">Select duplicate to merge</label>
+                  <select
+                    value={mergeTargetId}
+                    onChange={(e) => setMergeTargetId(e.target.value)}
+                    className="w-full px-4 py-2 border border-gray-200 rounded-lg focus:ring-2 focus:ring-primary-500 transition-all"
+                  >
+                    <option value="">Select a college...</option>
+                    {allColleges
+                      .filter(c => c.id !== mergeModal.targetId)
+                      .map(c => (
+                        <option key={c.id} value={c.id}>{c.officialName} ({c.shortName})</option>
+                      ))}
+                  </select>
+                </div>
+                <div className="flex gap-3 justify-end mt-6">
+                  <button
+                    onClick={() => { setMergeModal({ open: false, targetId: null, targetName: '' }); setMergeTargetId(''); }}
+                    className="px-4 py-2 text-gray-600 bg-gray-100 hover:bg-gray-200 rounded-lg font-medium transition-colors"
+                  >
+                    Cancel
+                  </button>
+                  <button
+                    disabled={!mergeTargetId}
+                    onClick={async () => {
+                      if (!window.confirm(`Merge "${allColleges.find(c => c.id === mergeTargetId)?.officialName}" INTO "${mergeModal.targetName}"? This cannot be undone.`)) return;
+                      try {
+                        const result = await apiMergeColleges(mergeModal.targetId, mergeTargetId);
+                        toast.success(`Merge successful: ${result.usersUpdated} users updated`);
+                        setAllColleges(prev => prev.filter(c => c.id !== mergeTargetId));
+                        setPendingColleges(prev => prev.filter(c => c.id !== mergeTargetId));
+                        setMergeModal({ open: false, targetId: null, targetName: '' });
+                        setMergeTargetId('');
+                      } catch (err) {
+                        toast.error('Merge failed: ' + (err.response?.data?.message || err.message));
+                      }
+                    }}
+                    className="px-4 py-2 bg-purple-600 hover:bg-purple-700 text-white rounded-lg font-medium transition-colors disabled:opacity-50"
+                  >
+                    Merge
+                  </button>
+                </div>
+              </div>
+            </div>
+          )}
         </div>
       )}
     </div>
