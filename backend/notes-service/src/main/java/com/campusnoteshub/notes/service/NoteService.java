@@ -9,10 +9,14 @@ import com.campusnoteshub.notes.model.SearchLog;
 import com.campusnoteshub.notes.repository.NoteRepository;
 import com.campusnoteshub.notes.repository.NoteRequestRepository;
 import com.campusnoteshub.notes.repository.SearchLogRepository;
+import org.slf4j.Logger;
+import org.slf4j.LoggerFactory;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.data.domain.*;
 import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.aggregation.Aggregation;
+import org.springframework.data.mongodb.core.aggregation.AggregationResults;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.stereotype.Service;
@@ -24,6 +28,8 @@ import java.util.Map;
 
 @Service
 public class NoteService {
+
+    private static final Logger log = LoggerFactory.getLogger(NoteService.class);
 
     @Autowired
     private NoteRepository noteRepository;
@@ -245,21 +251,58 @@ public class NoteService {
     }
 
     public Map<String, Object> getUserStats(String userId) {
-        // Only count verified (approved) and non-archived notes for stats and points
-        Query query = new Query(Criteria.where("uploadedBy").is(userId)
-                .and("verified").is(true)
-                .and("archived").is(false));
-        List<Note> userNotes = mongoTemplate.find(query, Note.class);
-        
-        long notesUploaded = userNotes.size();
-        long totalLikes = userNotes.stream().mapToLong(Note::getLikesCount).sum();
-        long totalDownloads = userNotes.stream().mapToLong(Note::getDownloads).sum();
-        
-        Map<String, Object> stats = new java.util.HashMap<>();
-        stats.put("notesUploaded", notesUploaded);
-        stats.put("totalLikes", totalLikes);
-        stats.put("totalDownloads", totalDownloads);
-        return stats;
+        log.info("[getUserStats] Request received for userId={}", userId);
+        try {
+            log.info("[getUserStats] Starting MongoDB aggregation query for userId={}", userId);
+
+            Aggregation aggregation = Aggregation.newAggregation(
+                    Aggregation.match(Criteria.where("uploadedBy").is(userId)
+                            .and("verified").is(true)
+                            .and("archived").is(false)),
+                    Aggregation.group()
+                            .count().as("notesUploaded")
+                            .sum("likesCount").as("totalLikes")
+                            .sum("downloads").as("totalDownloads")
+            );
+
+            AggregationResults<Map> results = mongoTemplate.aggregate(aggregation, "notes", Map.class);
+            log.info("[getUserStats] MongoDB aggregation query completed for userId={}", userId);
+
+            Map<String, Object> stats = new java.util.HashMap<>();
+
+            if (results.getUniqueMappedResult() != null) {
+                Map rawResult = results.getUniqueMappedResult();
+                long notesUploaded = rawResult.get("notesUploaded") != null
+                        ? ((Number) rawResult.get("notesUploaded")).longValue() : 0L;
+                long totalLikes = rawResult.get("totalLikes") != null
+                        ? ((Number) rawResult.get("totalLikes")).longValue() : 0L;
+                long totalDownloads = rawResult.get("totalDownloads") != null
+                        ? ((Number) rawResult.get("totalDownloads")).longValue() : 0L;
+
+                log.info("[getUserStats] userId={} — notesUploaded={}, totalLikes={}, totalDownloads={}",
+                        userId, notesUploaded, totalLikes, totalDownloads);
+
+                stats.put("notesUploaded", notesUploaded);
+                stats.put("totalLikes", totalLikes);
+                stats.put("totalDownloads", totalDownloads);
+            } else {
+                log.info("[getUserStats] No notes found for userId={}, returning default zeros", userId);
+                stats.put("notesUploaded", 0);
+                stats.put("totalLikes", 0);
+                stats.put("totalDownloads", 0);
+            }
+
+            log.info("[getUserStats] Returning response for userId={}: {}", userId, stats);
+            return stats;
+
+        } catch (Exception e) {
+            log.error("[getUserStats] Exception while computing stats for userId={}", userId, e);
+            Map<String, Object> defaultStats = new java.util.HashMap<>();
+            defaultStats.put("notesUploaded", 0);
+            defaultStats.put("totalLikes", 0);
+            defaultStats.put("totalDownloads", 0);
+            return defaultStats;
+        }
     }
 
     /**

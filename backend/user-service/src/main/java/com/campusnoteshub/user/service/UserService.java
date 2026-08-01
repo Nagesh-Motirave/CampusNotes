@@ -43,17 +43,27 @@ public class UserService {
 
         UserProfileResponse.UserStats stats = new UserProfileResponse.UserStats(0, 0, 0);
         try {
-            Map<String, Integer> userStats = restTemplate.getForObject(
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
+            log.info("[getUserProfile] Calling notes-service for user stats, userId={}", userId);
+
+            @SuppressWarnings("unchecked")
+            Map<String, Object> userStats = restTemplate.getForObject(
                     notesServiceUrl + "/notes/users/" + userId + "/stats", Map.class);
+
+            log.info("[getUserProfile] Received response from notes-service for userId={}: {}", userId, userStats);
+
             if (userStats != null) {
                 stats = new UserProfileResponse.UserStats(
-                    userStats.getOrDefault("notesUploaded", 0),
-                    userStats.getOrDefault("totalLikes", 0),
-                    userStats.getOrDefault("totalDownloads", 0)
+                    ((Number) userStats.getOrDefault("notesUploaded", 0)).intValue(),
+                    ((Number) userStats.getOrDefault("totalLikes", 0)).intValue(),
+                    ((Number) userStats.getOrDefault("totalDownloads", 0)).intValue()
                 );
             }
+            log.info("[getUserProfile] Parsed stats for userId={}: notesUploaded={}, totalLikes={}, totalDownloads={}",
+                    userId, stats.getNotesUploaded(), stats.getTotalLikes(), stats.getTotalDownloads());
         } catch (Exception e) {
-            System.err.println("Failed to fetch user stats from notes-service: " + e.getMessage());
+            org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(UserService.class);
+            log.error("[getUserProfile] Failed to fetch user stats from notes-service for userId={}", userId, e);
         }
 
 

@@ -89,7 +89,11 @@ public class NoteController {
 
     @GetMapping("/users/{userId}/stats")
     public ResponseEntity<java.util.Map<String, Object>> getUserStats(@PathVariable String userId) {
-        return ResponseEntity.ok(noteService.getUserStats(userId));
+        org.slf4j.Logger log = org.slf4j.LoggerFactory.getLogger(NoteController.class);
+        log.info("[NoteController] GET /notes/users/{}/stats — request received", userId);
+        java.util.Map<String, Object> stats = noteService.getUserStats(userId);
+        log.info("[NoteController] GET /notes/users/{}/stats — returning response: {}", userId, stats);
+        return ResponseEntity.ok(stats);
     }
 
     @GetMapping("/internal/points-summary")
