@@ -50,21 +50,23 @@ const NoteDetail = () => {
       // Add to recently viewed
       addRecentlyViewed(data);
 
-      // Fetch related notes
-      if (data.subject) {
-        const related = await getNotes({ subject: data.subject, size: 4 });
-        // Exclude current note
-        setRelatedNotes(related.content?.filter(n => (n.id || n._id) !== noteId) || []);
-      }
+      // Fire related notes, reviews, and study progress in parallel
+      const [relatedResult, reviewsResult, progressResult] = await Promise.allSettled([
+        data.subject
+          ? getNotes({ subject: data.subject, size: 4 }).then(res =>
+              res.content?.filter(n => (n.id || n._id) !== noteId) || []
+            )
+          : Promise.resolve([]),
+        getNoteReviews(noteId),
+        isAuthenticated && user?.id
+          ? getStudyProgress(user.id)
+          : Promise.resolve([]),
+      ]);
 
-      // Fetch reviews
-      const revs = await getNoteReviews(noteId);
-      setReviews(revs || []);
-
-      // Fetch study progress if authenticated
-      if (isAuthenticated && user?.id) {
-        const prog = await getStudyProgress(user.id);
-        setCompleted(prog.some(p => p.noteId === noteId && p.completed));
+      setRelatedNotes(relatedResult.status === 'fulfilled' ? relatedResult.value : []);
+      setReviews(reviewsResult.status === 'fulfilled' ? (reviewsResult.value || []) : []);
+      if (progressResult.status === 'fulfilled' && Array.isArray(progressResult.value)) {
+        setCompleted(progressResult.value.some(p => p.noteId === noteId && p.completed));
       }
 
     } catch (err) {

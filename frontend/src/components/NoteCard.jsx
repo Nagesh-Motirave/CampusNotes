@@ -1,4 +1,4 @@
-import { useState } from 'react';
+import { useState, useMemo, memo } from 'react';
 import { Link } from 'react-router-dom';
 import { recordDownload } from '../api/notes';
 import { useAuth } from '../context/AuthContext';
@@ -182,4 +182,4 @@ const NoteCard = ({ note }) => {
   );
 };
 
-export default NoteCard;
+export default memo(NoteCard);

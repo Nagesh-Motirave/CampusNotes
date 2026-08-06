@@ -9,4 +9,10 @@ import java.util.List;
 @Repository
 public interface NoteRequestRepository extends MongoRepository<NoteRequest, String> {
     List<NoteRequest> findByFulfilledFalseOrderByCreatedAtDesc();
+    
+    long countByFulfilledFalse();
+    
+    List<NoteRequest> findBySubjectIgnoreCaseAndFulfilledFalse(String subject);
+    
+    List<NoteRequest> findTop20ByFulfilledFalseOrderByCreatedAtDesc();
 }

@@ -1,22 +1,23 @@
+import { lazy, Suspense } from 'react';
 import { BrowserRouter as Router, Routes, Route } from 'react-router-dom';
 import { Toaster } from 'react-hot-toast';
 import { AuthProvider } from './context/AuthContext';
 import Navbar from './components/Navbar';
 import ProtectedRoute from './components/ProtectedRoute';
-
-// Pages
-import Home from './pages/Home';
-import Login from './pages/Login';
-import Register from './pages/Register';
-import ForgotPassword from './pages/ForgotPassword';
-import NotesList from './pages/NotesList';
-import NoteDetail from './pages/NoteDetail';
-import UploadNote from './pages/UploadNote';
-import RequestsPage from './pages/RequestsPage';
-import Profile from './pages/Profile';
-import RequestNotes from './pages/RequestNotes';
-import AdminDashboard from './pages/admin/AdminDashboard';
 import AdminRoute from './components/AdminRoute';
+
+// Lazy-loaded pages — each is code-split into its own chunk
+const Home = lazy(() => import('./pages/Home'));
+const Login = lazy(() => import('./pages/Login'));
+const Register = lazy(() => import('./pages/Register'));
+const ForgotPassword = lazy(() => import('./pages/ForgotPassword'));
+const NotesList = lazy(() => import('./pages/NotesList'));
+const NoteDetail = lazy(() => import('./pages/NoteDetail'));
+const UploadNote = lazy(() => import('./pages/UploadNote'));
+const RequestsPage = lazy(() => import('./pages/RequestsPage'));
+const Profile = lazy(() => import('./pages/Profile'));
+const RequestNotes = lazy(() => import('./pages/RequestNotes'));
+const AdminDashboard = lazy(() => import('./pages/admin/AdminDashboard'));
 
 function App() {
   return (
@@ -26,6 +27,11 @@ function App() {
           <Navbar />
           
           <main className="flex-1">
+            <Suspense fallback={
+              <div className="flex items-center justify-center min-h-[60vh]">
+                <div className="w-8 h-8 border-4 border-primary-500 border-t-transparent rounded-full animate-spin" />
+              </div>
+            }>
             <Routes>
               {/* Public Routes */}
               <Route path="/" element={<Home />} />
@@ -57,6 +63,7 @@ function App() {
                 </AdminRoute>
               } />
             </Routes>
+            </Suspense>
           </main>
 
           <Toaster 

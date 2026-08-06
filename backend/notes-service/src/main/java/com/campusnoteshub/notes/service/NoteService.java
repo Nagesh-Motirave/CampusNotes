@@ -78,17 +78,16 @@ public class NoteService {
         // Note: Points are now awarded upon admin approval, not upload.
 
         // Auto-fulfill matching requests and notify
-        List<NoteRequest> openRequests = noteRequestRepository.findByFulfilledFalseOrderByCreatedAtDesc();
-        for (NoteRequest req : openRequests) {
-            if (req.getSubject() != null && req.getSubject().equalsIgnoreCase(note.getSubject())) {
-                req.setFulfilled(true);
-                req.setFulfilledBy(userId);
-                req.setNoteId(savedNote.getId());
-                noteRequestRepository.save(req);
-                sendNotification(req.getRequestedBy(), 
-                    "Your requested note for " + note.getSubject() + " is now available!", 
-                    "/notes/" + savedNote.getId());
-            }
+        // Auto-fulfill matching requests and notify
+        List<NoteRequest> matchingRequests = noteRequestRepository.findBySubjectIgnoreCaseAndFulfilledFalse(note.getSubject());
+        for (NoteRequest req : matchingRequests) {
+            req.setFulfilled(true);
+            req.setFulfilledBy(userId);
+            req.setNoteId(savedNote.getId());
+            noteRequestRepository.save(req);
+            sendNotification(req.getRequestedBy(), 
+                "Your requested note for " + note.getSubject() + " is now available!", 
+                "/notes/" + savedNote.getId());
         }
 
         return savedNote;
@@ -140,10 +139,11 @@ public class NoteService {
         if ("mostDownloaded".equals(sort)) sortOrder = Sort.by(Sort.Direction.DESC, "downloads");
         else if ("topRated".equals(sort)) sortOrder = Sort.by(Sort.Direction.DESC, "likesCount");
 
+        // Count total matching documents (without sort/paging for efficiency)
+        long total = mongoTemplate.count(Query.of(query).limit(-1).skip(-1), Note.class);
+
         Pageable pageable = PageRequest.of(page, size, sortOrder);
         query.with(pageable);
-
-        long total = mongoTemplate.count(query, Note.class);
         List<Note> notes = mongoTemplate.find(query, Note.class);
 
         return new PageImpl<>(notes, pageable, total);
@@ -217,8 +217,10 @@ public class NoteService {
             mongoQuery.addCriteria(new Criteria().andOperator(keywordCriterias.toArray(new Criteria[0])));
         }
         
+        // Count before applying pagination for efficiency
+        long total = mongoTemplate.count(Query.of(mongoQuery).limit(-1).skip(-1), Note.class);
+        
         mongoQuery.with(pageable);
-        long total = mongoTemplate.count(mongoQuery, Note.class);
         List<Note> notes = mongoTemplate.find(mongoQuery, Note.class);
         Page<Note> results = new PageImpl<>(notes, pageable, total);
 

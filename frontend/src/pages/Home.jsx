@@ -1,4 +1,4 @@
-import { useState, useEffect, useCallback, useRef } from 'react';
+import { useState, useEffect, useCallback, useRef, useMemo } from 'react';
 import { Link, useNavigate, useSearchParams } from 'react-router-dom';
 import { getTopNotes, getNotes, getStats, searchNotes } from '../api/notes';
 import { getStudentsCount, getCollegesCount } from '../api/users';
@@ -45,12 +45,12 @@ const Home = () => {
   const searchWrapperRef = useRef(null);
   const suggestionsListRef = useRef(null);
 
-  const fmtStat = (n) => {
+  const fmtStat = useCallback((n) => {
     if (n === null) return '—';
     if (n >= 1_000_000) return `${(n / 1_000_000).toFixed(1)}M+`;
     if (n >= 1_000)     return `${(n / 1_000).toFixed(1)}K+`;
     return `${n}+`;
-  };
+  }, []);
 
   // ── Click outside to close suggestions ──
   useEffect(() => {
@@ -96,15 +96,17 @@ const Home = () => {
 
   // ── One‑time: load trending notes, recently added notes + stats ──
   useEffect(() => {
+    const controller = new AbortController();
     const fetchData = async () => {
       try {
         const [topData, statsData, recentData, studentsCount, collegesCount] = await Promise.all([
-          getTopNotes(),
-          getStats(),
-          getNotes({ size: 6, sort: 'latest' }),
-          getStudentsCount().catch(() => 0),
-          getCollegesCount().catch(() => 0)
+          getTopNotes({ signal: controller.signal }),
+          getStats({ signal: controller.signal }),
+          getNotes({ size: 6, sort: 'latest', signal: controller.signal }),
+          getStudentsCount({ signal: controller.signal }).catch(() => 0),
+          getCollegesCount({ signal: controller.signal }).catch(() => 0)
         ]);
+        if (controller.signal.aborted) return;
         setTrendingNotes(Array.isArray(topData) ? topData.slice(0, 6) : []);
         setRecentNotes(recentData.content ? recentData.content.slice(0, 6) : []);
         
@@ -114,12 +116,17 @@ const Home = () => {
           totalStudents: studentsCount ?? 0,
         });
       } catch (err) {
-        console.error('Failed to fetch notes:', err);
+        if (!controller.signal.aborted) {
+            console.error('Failed to fetch notes:', err);
+        }
       } finally {
-        setLoading(false);
+        if (!controller.signal.aborted) {
+            setLoading(false);
+        }
       }
     };
     fetchData();
+    return () => controller.abort();
   }, []);
 
   // ── Fetch filtered notes whenever filters change ──
@@ -237,13 +244,13 @@ const Home = () => {
     }
   };
 
-  const buildFilterTitle = () => {
+  const buildFilterTitle = useMemo(() => {
     const parts = [];
     if (filters.year) parts.push(filters.year);
     if (filters.semester) parts.push(`Semester ${filters.semester}`);
     if (filters.subject) parts.push(filters.subject);
     return parts.join(' · ');
-  };
+  }, [filters.year, filters.semester, filters.subject]);
 
   return (
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
@@ -389,7 +396,7 @@ const Home = () => {
               </div>
               <div>
                 <h2 className="text-xl font-bold text-gray-900 dark:text-white">
-                  Showing {buildFilterTitle()} Notes
+                  Showing {buildFilterTitle} Notes
                 </h2>
                 <p className="text-sm text-gray-500 mt-1">
                   {filterLoading ? 'Intelligent Search in progress...' : `${filteredNotes.length}${filterPage < filterTotalPages - 1 ? '+' : ''} highly relevant results found`}

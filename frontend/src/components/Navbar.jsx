@@ -1,4 +1,4 @@
-import { useState, useEffect } from 'react';
+import { useState, useEffect, useCallback } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, markNotificationsRead } from '../api/users';
@@ -25,14 +25,15 @@ const Navbar = () => {
     }
   }, [isAuthenticated, user]);
 
-  const fetchNotifications = async () => {
+  const fetchNotifications = useCallback(async () => {
+    if (!user?.id) return;
     try {
       const data = await getNotifications(user.id);
       setNotifications(data);
     } catch (e) {
       console.error("Failed to fetch notifications", e);
     }
-  };
+  }, [user?.id]);
 
   const handleMarkNotificationsRead = async () => {
     if (notifications.some(n => !n.read)) {

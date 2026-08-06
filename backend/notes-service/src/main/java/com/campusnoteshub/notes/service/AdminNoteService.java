@@ -67,7 +67,7 @@ public class AdminNoteService {
                 Query.query(Criteria.where("verified").is(false)), Note.class);
         stats.put("pendingApproval", pendingApproval);
 
-        long openRequests = noteRequestRepository.findByFulfilledFalseOrderByCreatedAtDesc().size();
+        long openRequests = noteRequestRepository.countByFulfilledFalse();
         stats.put("openRequests", openRequests);
 
         long totalRequests = noteRequestRepository.count();
@@ -213,15 +213,16 @@ public class AdminNoteService {
         Map<String, Object> result = new LinkedHashMap<>();
 
         long totalRequests = noteRequestRepository.count();
-        List<NoteRequest> openRequests = noteRequestRepository.findByFulfilledFalseOrderByCreatedAtDesc();
-        long fulfilledRequests = totalRequests - openRequests.size();
+        long openRequestsCount = noteRequestRepository.countByFulfilledFalse();
+        long fulfilledRequests = totalRequests - openRequestsCount;
 
         result.put("totalRequests", totalRequests);
-        result.put("openRequests", openRequests.size());
+        result.put("openRequests", openRequestsCount);
         result.put("fulfilledRequests", fulfilledRequests);
 
         // Recent requests (up to 20)
-        List<Map<String, Object>> recent = openRequests.stream().limit(20).map(r -> {
+        List<NoteRequest> recentOpenRequests = noteRequestRepository.findTop20ByFulfilledFalseOrderByCreatedAtDesc();
+        List<Map<String, Object>> recent = recentOpenRequests.stream().map(r -> {
             Map<String, Object> entry = new LinkedHashMap<>();
             entry.put("id", r.getId());
             entry.put("subject", r.getSubject());

@@ -15,6 +15,26 @@ const api = axios.create({
   timeout: 60000, // 60s — Render free-tier cold starts can take 30-50s
 });
 
+// ── In-flight GET Request Deduplication ─────────────────────────────────
+// Prevents duplicate concurrent GET requests (e.g., when components mount/unmount quickly).
+const inflightRequests = new Map();
+
+api.interceptors.request.use((config) => {
+  if (config.method === 'get') {
+    const key = config.url + JSON.stringify(config.params || {});
+    if (inflightRequests.has(key)) {
+      // Cancel this request and return the existing promise
+      const controller = new AbortController();
+      config.signal = controller.signal;
+      controller.abort('Duplicate request deduplicated');
+      config.__dedupKey = key;
+    } else {
+      config.__dedupKey = key;
+    }
+  }
+  return config;
+});
+
 // ── Request Interceptor ─────────────────────────────────────────────────
 // Attaches the JWT token (if present) to every outgoing request.
 api.interceptors.request.use(

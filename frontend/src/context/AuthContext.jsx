@@ -1,4 +1,4 @@
-import { createContext, useContext, useState, useEffect, useCallback } from 'react';
+import { createContext, useContext, useState, useEffect, useCallback, useMemo } from 'react';
 import { loginUser, registerUser } from '../api/auth';
 
 /**
@@ -70,10 +70,7 @@ export const AuthProvider = ({ children }) => {
   /** Login with email + password, stores JWT and user info */
   const login = useCallback(async (credentials) => {
     const data = await loginUser(credentials);
-    console.log('[AuthContext] Login response from backend:', JSON.stringify(data));
     const { token: jwt, ...userData } = data;
-    console.log('[AuthContext] Stored user data:', JSON.stringify(userData));
-    console.log('[AuthContext] User role:', userData.role);
     localStorage.setItem('token', jwt);
     localStorage.setItem('user', JSON.stringify(userData));
     setToken(jwt);
@@ -106,7 +103,7 @@ export const AuthProvider = ({ children }) => {
   /** Check if user has admin role */
   const isAdmin = !!(user?.role && user.role.toUpperCase() === 'ADMIN');
 
-  const value = {
+  const value = useMemo(() => ({
     user,
     token,
     loading,
@@ -115,7 +112,7 @@ export const AuthProvider = ({ children }) => {
     login,
     register,
     logout,
-  };
+  }), [user, token, loading, isAuthenticated, isAdmin, login, register, logout]);
 
   return (
     <AuthContext.Provider value={value}>
