@@ -40,8 +40,10 @@ const Home = () => {
   const [debouncedQuery, setDebouncedQuery] = useState('');
   const [searchSuggestions, setSearchSuggestions] = useState([]);
   const [showSuggestions, setShowSuggestions] = useState(false);
+  const [selectedSuggestionIndex, setSelectedSuggestionIndex] = useState(-1);
   const [recentSearches, setRecentSearches] = useState([]);
   const searchWrapperRef = useRef(null);
+  const suggestionsListRef = useRef(null);
 
   const fmtStat = (n) => {
     if (n === null) return '—';
@@ -84,9 +86,11 @@ const Home = () => {
     if (debouncedQuery.trim().length > 1) {
       searchNotes(debouncedQuery, 0, 4).then(res => {
         setSearchSuggestions(res.content || []);
+        setSelectedSuggestionIndex(-1);
       }).catch(console.error);
     } else {
       setSearchSuggestions([]);
+      setSelectedSuggestionIndex(-1);
     }
   }, [debouncedQuery]);
 
@@ -189,8 +193,48 @@ const Home = () => {
     const updatedRecent = [q, ...recentSearches.filter(s => s !== q)].slice(0, 5);
     setRecentSearches(updatedRecent);
     localStorage.setItem('recentSearches', JSON.stringify(updatedRecent));
-    
+    setShowSuggestions(false);
+    setSelectedSuggestionIndex(-1);
     navigate(`/notes?q=${encodeURIComponent(q)}`);
+  };
+
+  /** Scroll the highlighted suggestion into the visible area */
+  const scrollSuggestionIntoView = (index) => {
+    requestAnimationFrame(() => {
+      const item = suggestionsListRef.current?.querySelector(`[data-suggestion-index="${index}"]`);
+      if (item) {
+        item.scrollIntoView({ block: 'nearest' });
+      }
+    });
+  };
+
+  const handleSearchKeyDown = (e) => {
+    if (!showSuggestions || searchSuggestions.length === 0) return;
+
+    if (e.key === 'ArrowDown') {
+      e.preventDefault();
+      setSelectedSuggestionIndex((prev) => {
+        const next = prev < searchSuggestions.length - 1 ? prev + 1 : 0;
+        scrollSuggestionIntoView(next);
+        return next;
+      });
+    } else if (e.key === 'ArrowUp') {
+      e.preventDefault();
+      setSelectedSuggestionIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : searchSuggestions.length - 1;
+        scrollSuggestionIntoView(next);
+        return next;
+      });
+    } else if (e.key === 'Enter' && selectedSuggestionIndex >= 0) {
+      e.preventDefault();
+      const note = searchSuggestions[selectedSuggestionIndex];
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+      navigate(`/notes/${note.id || note._id}`);
+    } else if (e.key === 'Escape') {
+      setShowSuggestions(false);
+      setSelectedSuggestionIndex(-1);
+    }
   };
 
   const buildFilterTitle = () => {
@@ -244,8 +288,10 @@ const Home = () => {
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
                     setShowSuggestions(true);
+                    setSelectedSuggestionIndex(-1);
                   }}
                   onFocus={() => setShowSuggestions(true)}
+                  onKeyDown={handleSearchKeyDown}
                 />
                 <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
                   <svg className="h-6 w-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
@@ -259,7 +305,7 @@ const Home = () => {
 
               {/* Autocomplete Dropdown */}
               {showSuggestions && (searchQuery.length > 0 || recentSearches.length > 0) && (
-                <div className="absolute top-full left-0 right-0 mt-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transform origin-top animate-fade-in z-50">
+                <div ref={suggestionsListRef} className="absolute top-full left-0 right-0 mt-3 bg-white/95 dark:bg-gray-800/95 backdrop-blur-xl rounded-2xl shadow-2xl border border-gray-100 dark:border-gray-700 overflow-hidden transform origin-top animate-fade-in z-50 max-h-96 overflow-y-auto">
                   {/* Recent Searches */}
                   {searchQuery.trim().length === 0 && recentSearches.length > 0 && (
                     <div className="p-2">
@@ -284,8 +330,8 @@ const Home = () => {
                         AI Suggestions
                       </div>
                       {searchSuggestions.length > 0 ? (
-                        searchSuggestions.map((note) => (
-                          <Link key={note.id || note._id} to={`/notes/${note.id || note._id}`} className="flex items-center gap-4 px-4 py-3 hover:bg-primary-50 dark:hover:bg-gray-700/50 rounded-xl transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0">
+                        searchSuggestions.map((note, index) => (
+                          <Link key={note.id || note._id} to={`/notes/${note.id || note._id}`} data-suggestion-index={index} className={`flex items-center gap-4 px-4 py-3 rounded-xl transition-colors group border-b border-gray-50 dark:border-gray-800 last:border-0 ${index === selectedSuggestionIndex ? 'bg-primary-50 dark:bg-gray-700/50' : 'hover:bg-primary-50 dark:hover:bg-gray-700/50'}`}>
                             <div className="w-10 h-10 rounded-lg bg-gradient-to-br from-primary-400 to-indigo-500 flex items-center justify-center shadow-inner flex-shrink-0">
                               <svg className="w-5 h-5 text-white" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
                             </div>

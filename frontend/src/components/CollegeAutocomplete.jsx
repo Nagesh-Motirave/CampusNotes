@@ -35,6 +35,7 @@ const CollegeAutocomplete = ({
   const [loading, setLoading] = useState(false);
   const [selectedIndex, setSelectedIndex] = useState(-1);
   const wrapperRef = useRef(null);
+  const listRef = useRef(null);
   const debounceRef = useRef(null);
 
   // Sync external value changes
@@ -101,16 +102,34 @@ const CollegeAutocomplete = ({
 
     if (e.key === 'ArrowDown') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev < results.length - 1 ? prev + 1 : 0));
+      setSelectedIndex((prev) => {
+        const next = prev < results.length - 1 ? prev + 1 : 0;
+        scrollItemIntoView(next);
+        return next;
+      });
     } else if (e.key === 'ArrowUp') {
       e.preventDefault();
-      setSelectedIndex((prev) => (prev > 0 ? prev - 1 : results.length - 1));
+      setSelectedIndex((prev) => {
+        const next = prev > 0 ? prev - 1 : results.length - 1;
+        scrollItemIntoView(next);
+        return next;
+      });
     } else if (e.key === 'Enter' && selectedIndex >= 0) {
       e.preventDefault();
       handleSelect(results[selectedIndex]);
     } else if (e.key === 'Escape') {
       setIsOpen(false);
     }
+  };
+
+  /** Scroll the highlighted item into the visible area of the dropdown */
+  const scrollItemIntoView = (index) => {
+    requestAnimationFrame(() => {
+      const item = listRef.current?.querySelector(`[data-index="${index}"]`);
+      if (item) {
+        item.scrollIntoView({ block: 'nearest' });
+      }
+    });
   };
 
   const handleFocus = () => {
@@ -149,10 +168,11 @@ const CollegeAutocomplete = ({
 
       {/* Dropdown */}
       {isOpen && results.length > 0 && (
-        <div className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-60 overflow-y-auto animate-slide-up">
+        <div ref={listRef} className="absolute z-50 w-full mt-1 bg-white border border-gray-200 rounded-xl shadow-lg max-h-72 overflow-y-auto animate-slide-up">
           {results.map((college, index) => (
             <button
               key={college.id}
+              data-index={index}
               type="button"
               onClick={() => handleSelect(college)}
               className={`w-full text-left px-4 py-3 flex items-center gap-3 transition-colors border-b border-gray-50 last:border-0 ${
