@@ -4,6 +4,8 @@ import com.campusnoteshub.auth.dto.AuthResponse;
 import com.campusnoteshub.auth.dto.LoginRequest;
 import com.campusnoteshub.auth.dto.RegisterRequest;
 import com.campusnoteshub.auth.dto.ForgotPasswordRequest;
+import com.campusnoteshub.auth.dto.VerifyOtpRequest;
+import com.campusnoteshub.auth.dto.ResetPasswordRequest;
 import com.campusnoteshub.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -42,20 +44,29 @@ public class AuthController {
     }
 
     /**
-     * Reset a user's password using a secure token.
-     */
-    @PostMapping("/reset-password")
-    public ResponseEntity<java.util.Map<String, String>> resetPassword(@Valid @RequestBody com.campusnoteshub.auth.dto.ResetPasswordRequest request) {
-        authService.resetPassword(request.getToken(), request.getNewPassword());
-        return ResponseEntity.ok(java.util.Map.of("message", "Password has been successfully reset."));
-    }
-
-    /**
-     * Handle forgot password request.
+     * Handle forgot password request (send OTP).
      */
     @PostMapping("/forgot-password")
     public ResponseEntity<java.util.Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
         authService.forgotPassword(request.getEmail());
-        return ResponseEntity.ok(java.util.Map.of("message", "If an account exists, a reset link was sent."));
+        return ResponseEntity.ok(java.util.Map.of("message", "OTP sent successfully."));
+    }
+
+    /**
+     * Verify OTP.
+     */
+    @PostMapping("/verify-otp")
+    public ResponseEntity<java.util.Map<String, Boolean>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
+        boolean verified = authService.verifyOtp(request.getEmail(), request.getOtp());
+        return ResponseEntity.ok(java.util.Map.of("verified", verified));
+    }
+
+    /**
+     * Reset a user's password securely using an OTP.
+     */
+    @PostMapping("/reset-password")
+    public ResponseEntity<java.util.Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
+        authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
+        return ResponseEntity.ok(java.util.Map.of("message", "Password updated successfully."));
     }
 }

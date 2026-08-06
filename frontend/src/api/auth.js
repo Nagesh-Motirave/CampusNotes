@@ -16,13 +16,19 @@ export const loginUser = async (data) => {
   return response.data;
 };
 
-/** Request a password reset link */
+/** Request a password reset OTP */
 export const forgotPassword = async (email) => {
   const response = await api.post('/auth/forgot-password', { email });
   return response.data;
 };
 
-/** Reset password using a secure token */
+/** Verify OTP */
+export const verifyOtp = async (data) => {
+  const response = await api.post('/auth/verify-otp', data);
+  return response.data;
+};
+
+/** Reset password using OTP */
 export const resetPassword = async (data) => {
   const response = await api.post('/auth/reset-password', data);
   return response.data;
