@@ -12,20 +12,25 @@ const NotesList = () => {
   // Hierarchy State
   const [university, setUniversity] = useState(searchParams.get('uni') || null);
   const [branch, setBranch] = useState(searchParams.get('branch') || null);
+  
+  // Selection Panel State (available once branch is selected)
   const [year, setYear] = useState(searchParams.get('year') || null);
   const [semester, setSemester] = useState(searchParams.get('sem') ? parseInt(searchParams.get('sem')) : null);
-  const [subject, setSubject] = useState(searchParams.get('sub') || null);
   const [resourceType, setResourceType] = useState(searchParams.get('type') || null);
-  
-  // Dynamic Resource Types State
+  const [subjectFilter, setSubjectFilter] = useState(searchParams.get('sub') || null);
+
+  // Dynamic Options State
+  const [availableYears, setAvailableYears] = useState([]);
+  const [availableSemesters, setAvailableSemesters] = useState([]);
   const [availableResourceTypes, setAvailableResourceTypes] = useState([]);
+  const [availableSubjects, setAvailableSubjects] = useState([]);
 
   // View State (home, search, trending, most_downloaded, recently_uploaded, hierarchy)
   const [currentView, setCurrentView] = useState(searchParams.get('view') || (university ? 'hierarchy' : 'home'));
   const [searchQuery, setSearchQuery] = useState(searchParams.get('q') || '');
 
   // Data State
-  const [options, setOptions] = useState([]);
+  const [options, setOptions] = useState([]); // For University/Branch folder grid
   const [notes, setNotes] = useState([]);
   const [syllabusNotes, setSyllabusNotes] = useState([]);
   const [loading, setLoading] = useState(false);
@@ -41,18 +46,18 @@ const NotesList = () => {
     if (branch) params.set('branch', branch);
     if (year) params.set('year', year);
     if (semester) params.set('sem', semester);
-    if (subject) params.set('sub', subject);
     if (resourceType) params.set('type', resourceType);
+    if (subjectFilter) params.set('sub', subjectFilter);
     setSearchParams(params, { replace: true });
-  }, [currentView, searchQuery, university, branch, year, semester, subject, resourceType, setSearchParams]);
+  }, [currentView, searchQuery, university, branch, year, semester, resourceType, subjectFilter, setSearchParams]);
 
 
-  // Effect to load hierarchy options or notes depending on state
+  // Effect to load data
   useEffect(() => {
     setPage(0); // Reset page on state change
     loadData();
     // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, [currentView, searchQuery, university, branch, year, semester, subject, resourceType]);
+  }, [currentView, searchQuery, university, branch, year, semester, resourceType, subjectFilter]);
 
   // Handle Pagination
   useEffect(() => {
@@ -71,46 +76,44 @@ const NotesList = () => {
         } else if (!branch) {
            const branches = await getDistinctValues('branch', { university });
            setOptions(branches);
-        } else if (!year) {
-           const years = await getDistinctValues('year', { university, branch });
-           setOptions(years);
-        } else if (!semester) {
-           const sems = await getDistinctValues('semester', { university, branch, year });
-           // Remove '0' since it's our mock semester for Syllabus
-           setOptions(sems.filter(s => s !== '0' && s !== 0));
+        } else {
+           // Branch is selected! 
+           setOptions([]); // No more folder grid
+
+           // Fetch available years, semesters, types based on current selections
+           const [years, sems, types] = await Promise.all([
+             getDistinctValues('year', { university, branch }),
+             getDistinctValues('semester', { university, branch, year: year || undefined }),
+             getDistinctValues('resourceType', { university, branch, year: year || undefined, semester: semester || undefined })
+           ]);
            
-           // Fetch syllabus for this year
-           try {
-             const syl = await getNotes({ page: 0, size: 50, sort: 'latest', university, branch, year, resourceType: 'Syllabus' });
-             setSyllabusNotes(syl.content || syl || []);
-           } catch (e) {
-             console.error('Failed to fetch syllabus', e);
+           setAvailableYears(years);
+           setAvailableSemesters(sems.filter(s => s !== '0' && s !== 0));
+           setAvailableResourceTypes(types);
+
+           // Fetch syllabus for this year (if year selected but sem not)
+           if (year && !semester) {
+             try {
+               const syl = await getNotes({ page: 0, size: 50, sort: 'latest', university, branch, year, resourceType: 'Syllabus' });
+               setSyllabusNotes(syl.content || syl || []);
+             } catch (e) {
+               console.error('Failed to fetch syllabus', e);
+               setSyllabusNotes([]);
+             }
+           } else {
              setSyllabusNotes([]);
            }
-        } else if (!subject) {
-           const subs = await getDistinctValues('subjectName', { university, branch, year, semester });
-           // Exclude 'Syllabus' from subjects
-           setOptions(subs.filter(s => s !== 'Syllabus'));
-           setSyllabusNotes([]);
-        } else {
-           // We are at the leaf!
-           // 1. Fetch available resource types dynamically from DB
-           const types = await getDistinctValues('resourceType', { university, branch, year, semester, subjectName: subject });
-           setAvailableResourceTypes(types);
-           
-           // 2. Decide the current resource type to query
-           let activeType = resourceType;
-           if (types.length > 0 && (!activeType || !types.includes(activeType))) {
-             activeType = types[0];
-             setResourceType(activeType);
-           }
-           
-           // 3. Fetch Notes if we have at least one resource type
-           if (types.length === 0) {
-             setNotes([]);
-             setOptions([]);
+
+           // If all three (year, semester, resourceType) are selected, fetch subjects and notes
+           if (year && semester && resourceType) {
+             const subs = await getDistinctValues('subjectName', { university, branch, year, semester, resourceType });
+             setAvailableSubjects(subs.filter(s => s !== 'Syllabus'));
+             
+             await fetchNotes(isPagination, { university, branch, year, semester, resourceType, subjectName: subjectFilter });
            } else {
-             await fetchNotes(isPagination, { university, branch, year, semester, subjectName: subject, resourceType: activeType });
+             setNotes([]);
+             setAvailableSubjects([]);
+             setTotalPages(0);
            }
         }
       } else if (currentView === 'search' && searchQuery.trim()) {
@@ -124,7 +127,10 @@ const NotesList = () => {
       }
     } catch (err) {
       console.error(err);
-      if (!isPagination) setOptions([]);
+      if (!isPagination) {
+        setOptions([]);
+        setNotes([]);
+      }
     } finally {
       setLoading(false);
     }
@@ -162,7 +168,8 @@ const NotesList = () => {
     setBranch(null);
     setYear(null);
     setSemester(null);
-    setSubject(null);
+    setResourceType(null);
+    setSubjectFilter(null);
     setSyllabusNotes([]);
   };
 
@@ -189,31 +196,13 @@ const NotesList = () => {
         {university && (
           <>
             <span className="text-gray-300">/</span>
-            <button onClick={() => { setBranch(null); setYear(null); setSemester(null); setSubject(null); }} className="hover:text-primary-600 transition-colors font-medium">{university}</button>
+            <button onClick={() => { setBranch(null); setYear(null); setSemester(null); setResourceType(null); setSubjectFilter(null); }} className="hover:text-primary-600 transition-colors font-medium">{university}</button>
           </>
         )}
         {branch && (
           <>
             <span className="text-gray-300">/</span>
-            <button onClick={() => { setYear(null); setSemester(null); setSubject(null); }} className="hover:text-primary-600 transition-colors font-medium">{branch}</button>
-          </>
-        )}
-        {year && (
-          <>
-            <span className="text-gray-300">/</span>
-            <button onClick={() => { setSemester(null); setSubject(null); }} className="hover:text-primary-600 transition-colors font-medium">{year}</button>
-          </>
-        )}
-        {semester && (
-          <>
-            <span className="text-gray-300">/</span>
-            <button onClick={() => { setSubject(null); }} className="hover:text-primary-600 transition-colors font-medium">Sem {semester}</button>
-          </>
-        )}
-        {subject && (
-          <>
-            <span className="text-gray-300">/</span>
-            <span className="text-gray-900 font-semibold">{subject}</span>
+            <span className="text-gray-900 font-semibold">{branch}</span>
           </>
         )}
       </div>
@@ -221,30 +210,28 @@ const NotesList = () => {
   };
 
   const renderFolderGrid = () => {
-    if (loading) return <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><NoteGridSkeleton count={4} /></div>;
+    if (loading && options.length === 0 && !branch) return <div className="grid grid-cols-2 md:grid-cols-4 gap-4"><NoteGridSkeleton count={4} /></div>;
     
-    let emptyMsg = "No categories found";
-    if (semester && !subject) emptyMsg = "No subjects found for this semester yet.";
+    // Only show folder grid if university or branch is NOT selected
+    if (university && branch) return null;
 
     if (!options || options.length === 0) {
+      if (loading) return null;
       return (
         <div className="text-center py-16 bg-white rounded-2xl border border-gray-100 border-dashed">
-          <p className="text-gray-500">{emptyMsg}</p>
+          <p className="text-gray-500">No categories found</p>
         </div>
       );
     }
 
     return (
-      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4">
+      <div className="grid grid-cols-2 sm:grid-cols-3 md:grid-cols-4 lg:grid-cols-5 gap-4 mb-8">
         {options.map((opt, i) => (
           <button
             key={i}
             onClick={() => {
               if (!university) setUniversity(opt);
               else if (!branch) setBranch(opt);
-              else if (!year) setYear(opt);
-              else if (!semester) setSemester(opt);
-              else if (!subject) setSubject(opt);
             }}
             className="group flex flex-col items-center justify-center p-6 bg-white rounded-2xl border border-gray-100 shadow-sm hover:shadow-md hover:border-primary-200 transition-all text-center"
           >
@@ -254,10 +241,135 @@ const NotesList = () => {
               </svg>
             </div>
             <span className="font-semibold text-gray-800 text-sm group-hover:text-primary-600 transition-colors">
-              {!university ? opt : !branch ? opt : !year ? opt : !semester ? `Semester ${opt}` : opt}
+              {opt}
             </span>
           </button>
         ))}
+      </div>
+    );
+  };
+
+  const renderSelectionPanel = () => {
+    if (currentView !== 'hierarchy' || !branch) return null;
+    
+    return (
+      <div className="mb-8 bg-white p-6 rounded-2xl shadow-sm border border-gray-100">
+        <h3 className="text-lg font-bold text-gray-900 mb-6">Select Resource Criteria</h3>
+        
+        <div className="grid grid-cols-1 md:grid-cols-3 gap-8">
+          {/* Year Selection */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Year</h4>
+            {availableYears.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableYears.map(y => (
+                  <button
+                    key={y}
+                    onClick={() => { setYear(y); setSubjectFilter(null); }}
+                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+                      year === y
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 border border-gray-100'
+                    }`}
+                  >
+                    {y}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">No years available</p>
+            )}
+          </div>
+
+          {/* Semester Selection */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Semester</h4>
+            {availableSemesters.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableSemesters.map(s => (
+                  <button
+                    key={s}
+                    onClick={() => { setSemester(s); setSubjectFilter(null); }}
+                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+                      semester === s
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 border border-gray-100'
+                    }`}
+                  >
+                    Sem {s}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">Select Year first</p>
+            )}
+          </div>
+
+          {/* Resource Type Selection */}
+          <div>
+            <h4 className="text-xs font-bold text-gray-400 uppercase tracking-wider mb-3">Type</h4>
+            {availableResourceTypes.length > 0 ? (
+              <div className="flex flex-wrap gap-2">
+                {availableResourceTypes.map(t => (
+                  <button
+                    key={t}
+                    onClick={() => { setResourceType(t); setSubjectFilter(null); }}
+                    className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+                      resourceType === t
+                        ? 'bg-primary-600 text-white shadow-md'
+                        : 'text-gray-600 bg-gray-50 hover:bg-gray-100 hover:text-gray-900 border border-gray-100'
+                    }`}
+                  >
+                    {t}
+                  </button>
+                ))}
+              </div>
+            ) : (
+              <p className="text-sm text-gray-400 italic">Select Year & Sem first</p>
+            )}
+          </div>
+        </div>
+      </div>
+    );
+  };
+
+  const renderSubjectFilter = () => {
+    if (currentView !== 'hierarchy' || !branch || !year || !semester || !resourceType) return null;
+    if (availableSubjects.length === 0) return null;
+
+    return (
+      <div className="mb-6">
+        <h4 className="text-sm font-semibold text-gray-600 mb-3 flex items-center gap-2">
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+            <path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" />
+          </svg>
+          Filter by Subject (Optional)
+        </h4>
+        <div className="flex flex-wrap gap-2">
+          <button
+            onClick={() => setSubjectFilter(null)}
+            className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+              !subjectFilter
+                ? 'bg-gray-800 text-white shadow-md'
+                : 'text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm'
+            }`}
+          >
+            All Subjects
+          </button>
+          {availableSubjects.map(sub => (
+            <button
+              key={sub}
+              onClick={() => setSubjectFilter(sub)}
+              className={`px-4 py-2 rounded-xl font-medium text-sm transition-all ${
+                subjectFilter === sub
+                  ? 'bg-primary-600 text-white shadow-md'
+                  : 'text-gray-600 bg-white hover:bg-gray-50 border border-gray-200 shadow-sm'
+              }`}
+            >
+              {sub}
+            </button>
+          ))}
+        </div>
       </div>
     );
   };
@@ -266,6 +378,22 @@ const NotesList = () => {
     if (loading && page === 0) return <NoteGridSkeleton count={8} />;
     
     if (notes.length === 0) {
+      if (currentView === 'hierarchy' && (!year || !semester || !resourceType)) {
+        return (
+          <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
+            <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
+              <svg className="w-10 h-10 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}>
+                <path strokeLinecap="round" strokeLinejoin="round" d="M15 15l-2 5L9 9l11 4-5 2zm0 0l5 5M7.188 2.239l.777 2.897M5.136 7.965l-2.898-.777M13.95 4.05l-2.122 2.122m-5.657 5.656l-2.12 2.122" />
+              </svg>
+            </div>
+            <h3 className="text-lg font-semibold text-gray-800 mb-2">Make your selections</h3>
+            <p className="text-gray-500 max-w-sm mx-auto">
+              Select a Year, Semester, and Resource Type above to view resources.
+            </p>
+          </div>
+        );
+      }
+
       return (
         <div className="text-center py-20 bg-white rounded-3xl border border-gray-100 shadow-sm">
           <div className="w-20 h-20 bg-gray-50 rounded-full flex items-center justify-center mx-auto mb-4">
@@ -373,7 +501,7 @@ const NotesList = () => {
           
           <div className="flex flex-wrap items-center justify-between mb-6 gap-4">
             <h2 className="text-2xl font-bold text-gray-900 capitalize flex items-center gap-2">
-              {currentView === 'hierarchy' ? (subject ? subject : 'Select Category') : currentView.replace('_', ' ')}
+              {currentView === 'hierarchy' ? (branch ? branch : 'Select Category') : currentView.replace('_', ' ')}
             </h2>
             {currentView !== 'home' && currentView !== 'hierarchy' && (
               <button onClick={() => navigateTo('home')} className="text-sm font-medium text-gray-500 hover:text-primary-600 bg-white px-4 py-2 rounded-lg shadow-sm border border-gray-100">
@@ -382,25 +510,11 @@ const NotesList = () => {
             )}
           </div>
 
-          {currentView === 'hierarchy' && subject && availableResourceTypes.length > 0 && (
-            <div className="flex overflow-x-auto hide-scrollbar gap-2 mb-8 bg-white p-2 rounded-2xl shadow-sm border border-gray-100 w-fit">
-              {availableResourceTypes.map(type => (
-                <button
-                  key={type}
-                  onClick={() => setResourceType(type)}
-                  className={`px-5 py-2.5 rounded-xl font-medium text-sm whitespace-nowrap transition-all ${
-                    resourceType === type
-                      ? 'bg-primary-600 text-white shadow-md'
-                      : 'text-gray-600 hover:bg-gray-50 hover:text-gray-900'
-                  }`}
-                >
-                  {type}
-                </button>
-              ))}
-            </div>
-          )}
+          {currentView === 'hierarchy' && !branch && renderFolderGrid()}
 
-          {currentView === 'hierarchy' && !semester && syllabusNotes.length > 0 && (
+          {currentView === 'hierarchy' && branch && renderSelectionPanel()}
+
+          {currentView === 'hierarchy' && branch && year && !semester && syllabusNotes.length > 0 && (
             <div className="mb-12">
               <h3 className="text-xl font-bold text-gray-900 mb-5 flex items-center gap-2">
                 <div className="w-10 h-10 bg-primary-100 text-primary-600 rounded-xl flex items-center justify-center">
@@ -417,7 +531,9 @@ const NotesList = () => {
             </div>
           )}
 
-          {currentView === 'hierarchy' && !subject ? renderFolderGrid() : renderNotesGrid()}
+          {currentView === 'hierarchy' && branch && year && semester && resourceType && renderSubjectFilter()}
+          
+          {((currentView === 'hierarchy' && branch && year && semester && resourceType) || currentView !== 'hierarchy') && renderNotesGrid()}
         </div>
       </div>
     </div>
