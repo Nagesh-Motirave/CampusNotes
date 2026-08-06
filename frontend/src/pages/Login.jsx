@@ -34,7 +34,19 @@ const Login = () => {
       toast.success('Welcome back! 🎉');
       navigate('/');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Login failed. Please check your credentials.';
+      let msg;
+      if (err.response?.data?.message) {
+        // Backend returned a structured error (e.g., "Invalid email or password")
+        msg = err.response.data.message;
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        msg = 'Server is taking too long to respond. Please try again in a moment.';
+      } else if (!err.response) {
+        // No response at all — network error, CORS block, or server down
+        msg = 'Unable to reach the server. Please check your connection and try again.';
+        console.error('[Login] Network error (possible CORS or server down):', err.message);
+      } else {
+        msg = 'Login failed. Please check your credentials.';
+      }
       toast.error(msg);
     } finally {
       setLoading(false);

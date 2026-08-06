@@ -1,8 +1,7 @@
-import { useState, useEffect, useRef } from 'react';
+import { useState, useEffect } from 'react';
 import { Link, useNavigate } from 'react-router-dom';
 import { useAuth } from '../context/AuthContext';
 import { getNotifications, markNotificationsRead } from '../api/users';
-import { getNotes } from '../api/notes';
 
 /**
  * Navbar — top navigation bar with logo, search, upload button, profile avatar, login/logout.
@@ -12,9 +11,7 @@ const Navbar = () => {
   const { user, isAuthenticated, isAdmin, logout } = useAuth();
   const navigate = useNavigate();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [searchQuery, setSearchQuery] = useState('');
-  const [searchResults, setSearchResults] = useState([]);
-  const [showSearchDropdown, setShowSearchDropdown] = useState(false);
+
   
   const [notifications, setNotifications] = useState([]);
   const [showNotifications, setShowNotifications] = useState(false);
@@ -48,39 +45,7 @@ const Navbar = () => {
     }
   };
 
-  // Smart Search logic
-  const searchTimeout = useRef(null);
 
-  const handleSearchChange = (e) => {
-    const query = e.target.value;
-    setSearchQuery(query);
-    
-    if (searchTimeout.current) clearTimeout(searchTimeout.current);
-    
-    if (query.trim().length > 2) {
-      searchTimeout.current = setTimeout(async () => {
-        try {
-          const res = await getNotes({ search: query, size: 5 });
-          setSearchResults(res.content || []);
-          setShowSearchDropdown(true);
-        } catch (err) {
-          console.error("Search failed", err);
-        }
-      }, 300);
-    } else {
-      setSearchResults([]);
-      setShowSearchDropdown(false);
-    }
-  };
-
-  const handleSearch = (e) => {
-    e.preventDefault();
-    if (searchQuery.trim()) {
-      navigate(`/notes?q=${encodeURIComponent(searchQuery.trim())}`);
-      setSearchQuery('');
-      setMobileMenuOpen(false);
-    }
-  };
 
   const handleLogout = () => {
     logout();
@@ -111,52 +76,7 @@ const Navbar = () => {
             </span>
           </Link>
 
-          {/* Search Bar — Desktop */}
-          <div className="hidden md:flex flex-1 max-w-md mx-8 relative">
-            <form onSubmit={handleSearch} className="w-full relative z-20">
-              <div className="relative w-full">
-                <svg className="absolute left-3 top-1/2 -translate-y-1/2 w-4 h-4 text-gray-400" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                  <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
-                </svg>
-                <input
-                  type="text"
-                  value={searchQuery}
-                  onChange={handleSearchChange}
-                  onFocus={() => searchQuery.length > 2 && setShowSearchDropdown(true)}
-                  placeholder="Search notes, subjects..."
-                  className="w-full pl-10 pr-4 py-2 rounded-xl border border-gray-200 bg-gray-50 text-sm focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent focus:bg-white transition-all"
-                />
-              </div>
-            </form>
-            
-            {/* Smart Search Dropdown */}
-            {showSearchDropdown && (
-              <>
-                <div className="fixed inset-0 z-10" onClick={() => setShowSearchDropdown(false)} />
-                <div className="absolute top-full left-0 w-full mt-2 bg-white rounded-xl shadow-xl border border-gray-100 overflow-hidden z-20 animate-fade-in">
-                  {searchResults.length > 0 ? (
-                    <div className="py-2">
-                      {searchResults.map(note => (
-                        <Link 
-                          key={note.id} 
-                          to={`/notes/${note.id}`}
-                          onClick={() => { setShowSearchDropdown(false); setSearchQuery(''); }}
-                          className="block px-4 py-3 hover:bg-gray-50 border-b border-gray-50 last:border-0"
-                        >
-                          <p className="text-sm font-semibold text-gray-900 truncate">{note.title}</p>
-                          <p className="text-xs text-gray-500 truncate">{note.subject}</p>
-                        </Link>
-                      ))}
-                    </div>
-                  ) : (
-                    <div className="px-4 py-3 text-sm text-gray-500">
-                      No results found for "{searchQuery}"
-                    </div>
-                  )}
-                </div>
-              </>
-            )}
-          </div>
+
 
           {/* Right Actions */}
           <div className="hidden md:flex items-center gap-3">
@@ -277,17 +197,7 @@ const Navbar = () => {
       {/* Mobile Menu */}
       {mobileMenuOpen && (
         <div className="md:hidden border-t border-gray-200 bg-white animate-fade-in">
-          <div className="px-4 py-3">
-            <form onSubmit={handleSearch}>
-              <input
-                type="text"
-                value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                placeholder="Search notes..."
-                className="input-field text-sm"
-              />
-            </form>
-          </div>
+
           <div className="px-4 pb-4 space-y-1">
             <Link to="/notes" onClick={() => setMobileMenuOpen(false)} className="block px-3 py-2 rounded-lg text-gray-700 hover:bg-gray-50">
               Browse Notes

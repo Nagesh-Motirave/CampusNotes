@@ -12,10 +12,11 @@ spring:
       globalcors:
         cors-configurations:
           '[/**]':
-            allowedOrigins:
+            allowedOriginPatterns:
               - "http://localhost:5173"
               - "http://localhost:3000"
               - "${FRONTEND_URL:http://localhost:5173}"
+              - "${DEPLOYED_FRONTEND_URL:https://*.vercel.app}"
             allowedMethods:
               - GET
               - POST

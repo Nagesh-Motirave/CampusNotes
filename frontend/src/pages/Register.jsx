@@ -40,7 +40,16 @@ const Register = () => {
       toast.success('Account created! Welcome to Campus Notes Hub! 🎓');
       navigate('/');
     } catch (err) {
-      const msg = err.response?.data?.message || 'Registration failed. Please try again.';
+      let msg;
+      if (err.response?.data?.message) {
+        msg = err.response.data.message;
+      } else if (err.code === 'ECONNABORTED' || err.message?.includes('timeout')) {
+        msg = 'Server is taking too long to respond. Please try again in a moment.';
+      } else if (!err.response) {
+        msg = 'Unable to reach the server. Please check your connection and try again.';
+      } else {
+        msg = 'Registration failed. Please try again.';
+      }
       toast.error(msg);
     } finally {
       setLoading(false);
