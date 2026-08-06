@@ -42,13 +42,12 @@ public class AuthController {
     }
 
     /**
-     * Reset a user's password to fix corrupted hashes.
-     * Usage: POST /auth/reset-password?email=user@example.com&password=newpassword
+     * Reset a user's password using a secure token.
      */
     @PostMapping("/reset-password")
-    public ResponseEntity<java.util.Map<String, String>> resetPassword(@RequestParam String email, @RequestParam String password) {
-        authService.resetPassword(email, password);
-        return ResponseEntity.ok(java.util.Map.of("message", "Password reset for " + email));
+    public ResponseEntity<java.util.Map<String, String>> resetPassword(@Valid @RequestBody com.campusnoteshub.auth.dto.ResetPasswordRequest request) {
+        authService.resetPassword(request.getToken(), request.getNewPassword());
+        return ResponseEntity.ok(java.util.Map.of("message", "Password has been successfully reset."));
     }
 
     /**

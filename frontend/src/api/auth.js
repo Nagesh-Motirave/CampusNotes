@@ -21,3 +21,9 @@ export const forgotPassword = async (email) => {
   const response = await api.post('/auth/forgot-password', { email });
   return response.data;
 };
+
+/** Reset password using a secure token */
+export const resetPassword = async (data) => {
+  const response = await api.post('/auth/reset-password', data);
+  return response.data;
+};

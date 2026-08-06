@@ -7,6 +7,9 @@ import com.campusnoteshub.auth.dto.RegisterRequest;
 import com.campusnoteshub.auth.model.User;
 import com.campusnoteshub.auth.repository.UserRepository;
 import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.mail.SimpleMailMessage;
+import org.springframework.mail.javamail.JavaMailSender;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -24,6 +27,12 @@ public class AuthService {
 
     @Autowired
     private CollegeResolver collegeResolver;
+
+    @Autowired
+    private JavaMailSender mailSender;
+
+    @Value("${frontend.url:http://localhost:5173}")
+    private String frontendUrl;
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -114,20 +123,45 @@ public class AuthService {
     }
 
     /**
-     * Reset a user's password directly (useful for fixing corrupted data).
+     * Reset a user's password using a secure token.
      */
-    public void resetPassword(String email, String rawPassword) {
+    public void resetPassword(String token, String newPassword) {
+        String email = jwtUtil.validatePasswordResetTokenAndGetEmail(token);
+        if (email == null) {
+            throw new RuntimeException("Invalid or expired password reset token");
+        }
+
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        user.setPasswordHash(passwordEncoder.encode(rawPassword));
+                .orElseThrow(() -> new RuntimeException("User not found"));
+        user.setPasswordHash(passwordEncoder.encode(newPassword));
         userRepository.save(user);
     }
+    
     /**
      * Handle forgot password request.
-     * In a real application, this would generate a reset token and send an email.
+     * Generates a reset token and sends an email.
      */
     public void forgotPassword(String email) {
-        // Prevent email enumeration by returning successfully even if user not found.
-        // If email service was configured, we would send the email here if user exists.
+        if (!userRepository.existsByEmail(email)) {
+            return; // Prevent email enumeration
+        }
+        
+        String token = jwtUtil.generatePasswordResetToken(email);
+        String resetLink = frontendUrl + "/reset-password?token=" + token;
+        
+        try {
+            SimpleMailMessage message = new SimpleMailMessage();
+            message.setTo(email);
+            message.setSubject("Password Reset Request - Campus Notes Hub");
+            message.setText("Hello,\n\nWe received a request to reset your password.\n" +
+                    "Click the link below to set a new password:\n\n" +
+                    resetLink + "\n\n" +
+                    "This link is valid for 15 minutes. If you didn't request a password reset, you can safely ignore this email.\n\n" +
+                    "Regards,\nCampus Notes Hub Team");
+            mailSender.send(message);
+        } catch (Exception e) {
+            // Log the error in a real app, here we throw it so the user knows
+            throw new RuntimeException("Failed to send password reset email: " + e.getMessage());
+        }
     }
 }

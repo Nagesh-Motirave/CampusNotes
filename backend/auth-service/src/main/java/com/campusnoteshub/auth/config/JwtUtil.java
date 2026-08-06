@@ -32,4 +32,31 @@ public class JwtUtil {
                 .signWith(getSigningKey())
                 .compact();
     }
+
+    public String generatePasswordResetToken(String email) {
+        return Jwts.builder()
+                .subject(email)
+                .claim("type", "reset-password")
+                .issuedAt(new Date(System.currentTimeMillis()))
+                .expiration(new Date(System.currentTimeMillis() + 15 * 60 * 1000)) // 15 mins
+                .signWith(getSigningKey())
+                .compact();
+    }
+
+    public String validatePasswordResetTokenAndGetEmail(String token) {
+        try {
+            io.jsonwebtoken.Claims claims = Jwts.parser()
+                    .verifyWith(getSigningKey())
+                    .build()
+                    .parseSignedClaims(token)
+                    .getPayload();
+            
+            if (!"reset-password".equals(claims.get("type"))) {
+                return null;
+            }
+            return claims.getSubject();
+        } catch (Exception e) {
+            return null; // Invalid or expired token
+        }
+    }
 }
