@@ -5,11 +5,7 @@
 const FilterBar = ({ filters, onChange }) => {
   const years = ['All Years', 'Diploma', 'Engineering'];
   const semesters = ['All Semesters', '1', '2', '3', '4', '5', '6', '7', '8'];
-  const subjects = [
-    'All Subjects', 'Mathematics', 'Physics', 'Chemistry', 'Computer Science',
-    'Electronics', 'Mechanical', 'Civil', 'Electrical', 'DBMS', 'OS',
-    'Data Structure', 'Networking', 'Software Engineering', 'AI/ML',
-  ];
+
 
   const handleChange = (key, value) => {
     onChange({
@@ -52,17 +48,7 @@ const FilterBar = ({ filters, onChange }) => {
         ))}
       </select>
 
-      {/* Subject filter */}
-      <select
-        value={filters.subject || 'All Subjects'}
-        onChange={(e) => handleChange('subject', e.target.value)}
-        className={selectClass}
-        id="filter-subject"
-      >
-        {subjects.map((s) => (
-          <option key={s} value={s}>{s}</option>
-        ))}
-      </select>
+
 
       {/* Clear filters */}
       {(filters.year || filters.semester || filters.subject) && (
