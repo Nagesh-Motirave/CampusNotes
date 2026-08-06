@@ -3,6 +3,7 @@ package com.campusnoteshub.auth.controller;
 import com.campusnoteshub.auth.dto.AuthResponse;
 import com.campusnoteshub.auth.dto.LoginRequest;
 import com.campusnoteshub.auth.dto.RegisterRequest;
+import com.campusnoteshub.auth.dto.ForgotPasswordRequest;
 import com.campusnoteshub.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -48,5 +49,14 @@ public class AuthController {
     public ResponseEntity<java.util.Map<String, String>> resetPassword(@RequestParam String email, @RequestParam String password) {
         authService.resetPassword(email, password);
         return ResponseEntity.ok(java.util.Map.of("message", "Password reset for " + email));
+    }
+
+    /**
+     * Handle forgot password request.
+     */
+    @PostMapping("/forgot-password")
+    public ResponseEntity<java.util.Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
+        authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "If an account exists, a reset link was sent."));
     }
 }

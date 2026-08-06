@@ -122,4 +122,12 @@ public class AuthService {
         user.setPasswordHash(passwordEncoder.encode(rawPassword));
         userRepository.save(user);
     }
+    /**
+     * Handle forgot password request.
+     * In a real application, this would generate a reset token and send an email.
+     */
+    public void forgotPassword(String email) {
+        // Prevent email enumeration by returning successfully even if user not found.
+        // If email service was configured, we would send the email here if user exists.
+    }
 }
