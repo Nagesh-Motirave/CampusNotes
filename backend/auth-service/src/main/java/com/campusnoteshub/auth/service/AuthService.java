@@ -12,6 +12,10 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.mail.SimpleMailMessage;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.data.mongodb.core.MongoTemplate;
+import org.springframework.data.mongodb.core.query.Criteria;
+import org.springframework.data.mongodb.core.query.Query;
+import org.springframework.data.mongodb.core.query.Update;
 import org.springframework.security.crypto.password.PasswordEncoder;
 import org.springframework.stereotype.Service;
 
@@ -39,6 +43,9 @@ public class AuthService {
 
     @Autowired
     private JavaMailSender mailSender;
+
+    @Autowired
+    private MongoTemplate mongoTemplate;
 
     @Value("${frontend.url:http://localhost:5173}")
     private String frontendUrl;
@@ -104,7 +111,15 @@ public class AuthService {
 
         // If the raw role field in MongoDB was empty/null, save the normalized value
         if (needsSave) {
-            user = userRepository.save(user);
+            Query query = new Query(Criteria.where("id").is(user.getId()));
+            Update update = new Update();
+            if (user.getRole() != null) {
+                update.set("role", user.getRole());
+            }
+            if (user.getCollegeId() != null) {
+                update.set("collegeId", user.getCollegeId());
+            }
+            mongoTemplate.updateFirst(query, update, User.class);
         }
 
         String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
@@ -127,8 +142,10 @@ public class AuthService {
     public void promoteToAdmin(String email) {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        user.setRole("ADMIN");
-        userRepository.save(user);
+        
+        Query query = new Query(Criteria.where("id").is(user.getId()));
+        Update update = new Update().set("role", "ADMIN");
+        mongoTemplate.updateFirst(query, update, User.class);
     }
 
     /**
@@ -150,10 +167,14 @@ public class AuthService {
         
         // Hash OTP and store it in User entity
         String otpHash = passwordEncoder.encode(otpString);
-        user.setResetOtpHash(otpHash);
-        user.setResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
-        user.setResetOtpAttempts(0);
-        userRepository.save(user);
+        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
+        
+        Query query = new Query(Criteria.where("id").is(user.getId()));
+        Update update = new Update()
+                .set("resetOtpHash", otpHash)
+                .set("resetOtpExpiresAt", expiresAt)
+                .set("resetOtpAttempts", 0);
+        mongoTemplate.updateFirst(query, update, User.class);
         
         return otpString;
     }
@@ -183,8 +204,10 @@ public class AuthService {
 
         if (!passwordEncoder.matches(otp, user.getResetOtpHash())) {
             int attempts = user.getResetOtpAttempts() != null ? user.getResetOtpAttempts() : 0;
-            user.setResetOtpAttempts(attempts + 1);
-            userRepository.save(user);
+            
+            Query query = new Query(Criteria.where("id").is(user.getId()));
+            Update update = new Update().set("resetOtpAttempts", attempts + 1);
+            mongoTemplate.updateFirst(query, update, User.class);
             return false;
         }
 
@@ -202,10 +225,12 @@ public class AuthService {
         User user = userRepository.findByEmail(email)
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
-        user.setPasswordHash(passwordEncoder.encode(newPassword));
-        user.setResetOtpHash(null);
-        user.setResetOtpExpiresAt(null);
-        user.setResetOtpAttempts(null);
-        userRepository.save(user);
+        Query query = new Query(Criteria.where("id").is(user.getId()));
+        Update update = new Update()
+                .set("password", passwordEncoder.encode(newPassword))
+                .unset("resetOtpHash")
+                .unset("resetOtpExpiresAt")
+                .unset("resetOtpAttempts");
+        mongoTemplate.updateFirst(query, update, User.class);
     }
 }
