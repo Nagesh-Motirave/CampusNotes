@@ -22,6 +22,7 @@ import org.springframework.stereotype.Service;
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+import jakarta.annotation.PostConstruct;
 
 @Service
 public class AuthService {
@@ -49,6 +50,13 @@ public class AuthService {
 
     @Value("${frontend.url:http://localhost:5173}")
     private String frontendUrl;
+
+    @PostConstruct
+    public void fixCorruptedMongoData() {
+        // Fix _class mapping issues caused by saving fully qualified class names 
+        // to a shared database. This ensures user-service doesn't crash on startup/query.
+        mongoTemplate.updateMulti(new Query(), new Update().unset("_class"), User.class);
+    }
 
     public AuthResponse register(RegisterRequest request) {
         if (userRepository.existsByEmail(request.getEmail())) {
@@ -227,7 +235,7 @@ public class AuthService {
         
         Query query = new Query(Criteria.where("id").is(user.getId()));
         Update update = new Update()
-                .set("password", passwordEncoder.encode(newPassword))
+                .set("passwordHash", passwordEncoder.encode(newPassword))
                 .unset("resetOtpHash")
                 .unset("resetOtpExpiresAt")
                 .unset("resetOtpAttempts");
