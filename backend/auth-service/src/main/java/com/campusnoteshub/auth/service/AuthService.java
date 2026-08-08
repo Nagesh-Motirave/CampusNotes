@@ -133,68 +133,58 @@ public class AuthService {
 
     /**
      * Handle forgot password request.
-     * Generates a 6-digit OTP and sends an email.
+     * Generates a 6-digit OTP and returns it for DEMO purposes.
      */
-    public void forgotPassword(String email) {
-        if (!userRepository.existsByEmail(email)) {
-            return; // Prevent email enumeration
+    public String forgotPassword(String email) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
+            return "000000"; // Prevent email enumeration by returning a dummy OTP
         }
         
-        // Delete any existing OTP for this email
-        otpRepository.deleteByEmail(email);
+        User user = userOpt.get();
 
         // Generate 6-digit OTP
         SecureRandom random = new SecureRandom();
         int otpValue = 100000 + random.nextInt(900000);
         String otpString = String.valueOf(otpValue);
         
-        // Hash OTP and store it
+        // Hash OTP and store it in User entity
         String otpHash = passwordEncoder.encode(otpString);
-        PasswordResetOtp otpEntity = new PasswordResetOtp(
-                email, 
-                otpHash, 
-                LocalDateTime.now().plusMinutes(5), 
-                0
-        );
-        otpRepository.save(otpEntity);
+        user.setResetOtpHash(otpHash);
+        user.setResetOtpExpiresAt(LocalDateTime.now().plusMinutes(10));
+        user.setResetOtpAttempts(0);
+        userRepository.save(user);
         
-        try {
-            SimpleMailMessage message = new SimpleMailMessage();
-            message.setTo(email);
-            message.setSubject("Your Password Reset OTP - Campus Notes Hub");
-            message.setText("Hello,\n\nWe received a request to reset your password.\n" +
-                    "Your One-Time Password (OTP) is: " + otpString + "\n\n" +
-                    "This OTP is valid for 5 minutes. If you didn't request a password reset, you can safely ignore this email.\n\n" +
-                    "Regards,\nCampus Notes Hub Team");
-            mailSender.send(message);
-        } catch (Exception e) {
-            // Log the error in a real app, here we throw it so the user knows
-            throw new RuntimeException("Failed to send password reset email: " + e.getMessage());
-        }
+        return otpString;
     }
 
     /**
      * Verify OTP.
      */
     public boolean verifyOtp(String email, String otp) {
-        Optional<PasswordResetOtp> otpOpt = otpRepository.findByEmail(email);
-        if (otpOpt.isEmpty()) {
+        Optional<User> userOpt = userRepository.findByEmail(email);
+        if (userOpt.isEmpty()) {
             return false;
         }
 
-        PasswordResetOtp otpEntity = otpOpt.get();
+        User user = userOpt.get();
 
-        if (otpEntity.getAttempts() >= 5) {
+        if (user.getResetOtpHash() == null) {
+            return false;
+        }
+
+        if (user.getResetOtpAttempts() != null && user.getResetOtpAttempts() >= 5) {
             throw new RuntimeException("Maximum OTP attempts reached. Please request a new OTP.");
         }
 
-        if (otpEntity.getExpiryDate().isBefore(LocalDateTime.now())) {
+        if (user.getResetOtpExpiresAt() != null && user.getResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
             throw new RuntimeException("OTP has expired.");
         }
 
-        if (!passwordEncoder.matches(otp, otpEntity.getOtpHash())) {
-            otpEntity.setAttempts(otpEntity.getAttempts() + 1);
-            otpRepository.save(otpEntity);
+        if (!passwordEncoder.matches(otp, user.getResetOtpHash())) {
+            int attempts = user.getResetOtpAttempts() != null ? user.getResetOtpAttempts() : 0;
+            user.setResetOtpAttempts(attempts + 1);
+            userRepository.save(user);
             return false;
         }
 
@@ -213,8 +203,9 @@ public class AuthService {
                 .orElseThrow(() -> new RuntimeException("User not found"));
         
         user.setPasswordHash(passwordEncoder.encode(newPassword));
+        user.setResetOtpHash(null);
+        user.setResetOtpExpiresAt(null);
+        user.setResetOtpAttempts(null);
         userRepository.save(user);
-        
-        otpRepository.deleteByEmail(email);
     }
 }

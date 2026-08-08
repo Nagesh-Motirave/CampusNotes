@@ -30,6 +30,12 @@ public class User {
     
     private LocalDateTime createdAt = LocalDateTime.now();
 
+    private String resetOtpHash;
+    
+    private LocalDateTime resetOtpExpiresAt;
+    
+    private Integer resetOtpAttempts;
+
     // Getters and Setters
     public String getId() { return id; }
     public void setId(String id) { this.id = id; }
@@ -57,4 +63,13 @@ public class User {
 
     public String getRole() { return (role == null || role.isEmpty()) ? "USER" : role; }
     public void setRole(String role) { this.role = role; }
+
+    public String getResetOtpHash() { return resetOtpHash; }
+    public void setResetOtpHash(String resetOtpHash) { this.resetOtpHash = resetOtpHash; }
+
+    public LocalDateTime getResetOtpExpiresAt() { return resetOtpExpiresAt; }
+    public void setResetOtpExpiresAt(LocalDateTime resetOtpExpiresAt) { this.resetOtpExpiresAt = resetOtpExpiresAt; }
+
+    public Integer getResetOtpAttempts() { return resetOtpAttempts; }
+    public void setResetOtpAttempts(Integer resetOtpAttempts) { this.resetOtpAttempts = resetOtpAttempts; }
 }

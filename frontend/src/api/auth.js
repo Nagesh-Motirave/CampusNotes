@@ -24,7 +24,7 @@ export const forgotPassword = async (email) => {
 
 /** Verify OTP */
 export const verifyOtp = async (data) => {
-  const response = await api.post('/auth/verify-otp', data);
+  const response = await api.post('/auth/verify-reset-otp', data);
   return response.data;
 };
 

@@ -48,14 +48,14 @@ public class AuthController {
      */
     @PostMapping("/forgot-password")
     public ResponseEntity<java.util.Map<String, String>> forgotPassword(@Valid @RequestBody ForgotPasswordRequest request) {
-        authService.forgotPassword(request.getEmail());
-        return ResponseEntity.ok(java.util.Map.of("message", "OTP sent successfully."));
+        String otp = authService.forgotPassword(request.getEmail());
+        return ResponseEntity.ok(java.util.Map.of("message", "OTP sent successfully.", "otp", otp));
     }
 
     /**
      * Verify OTP.
      */
-    @PostMapping("/verify-otp")
+    @PostMapping("/verify-reset-otp")
     public ResponseEntity<java.util.Map<String, Boolean>> verifyOtp(@Valid @RequestBody VerifyOtpRequest request) {
         boolean verified = authService.verifyOtp(request.getEmail(), request.getOtp());
         return ResponseEntity.ok(java.util.Map.of("verified", verified));

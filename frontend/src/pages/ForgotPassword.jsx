@@ -10,6 +10,7 @@ const ForgotPassword = () => {
   const [loading, setLoading] = useState(false);
   const [email, setEmail] = useState('');
   const [otp, setOtp] = useState('');
+  const [demoOtp, setDemoOtp] = useState('');
   const [countdown, setCountdown] = useState(0);
   const navigate = useNavigate();
 
@@ -44,7 +45,8 @@ const ForgotPassword = () => {
   const onEmailSubmit = async (data) => {
     setLoading(true);
     try {
-      await forgotPassword(data.email);
+      const response = await forgotPassword(data.email);
+      setDemoOtp(response.otp);
       setEmail(data.email);
       setStep(2);
       setCountdown(60);
@@ -61,7 +63,8 @@ const ForgotPassword = () => {
     if (countdown > 0) return;
     setLoading(true);
     try {
-      await forgotPassword(email);
+      const response = await forgotPassword(email);
+      setDemoOtp(response.otp);
       setCountdown(60);
       toast.success('A new OTP has been sent.');
     } catch (err) {
@@ -179,6 +182,11 @@ const ForgotPassword = () => {
 
           {step === 2 && (
             <form onSubmit={handleOtpSubmit(onOtpSubmit)} className="space-y-5">
+              {demoOtp && (
+                <div className="bg-yellow-50 border border-yellow-200 text-yellow-800 rounded-md p-3 mb-4 text-center text-sm font-medium">
+                  DEMO OTP: <span className="font-bold text-lg tracking-widest">{demoOtp}</span>
+                </div>
+              )}
               <div>
                 <label className="block text-sm font-medium text-gray-700 mb-1.5 text-center">
                   6-Digit OTP
