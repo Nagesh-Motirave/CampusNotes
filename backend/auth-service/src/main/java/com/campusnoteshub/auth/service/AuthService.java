@@ -4,24 +4,23 @@ import com.campusnoteshub.auth.config.JwtUtil;
 import com.campusnoteshub.auth.dto.AuthResponse;
 import com.campusnoteshub.auth.dto.LoginRequest;
 import com.campusnoteshub.auth.dto.RegisterRequest;
-import com.campusnoteshub.auth.model.PasswordResetOtp;
 import com.campusnoteshub.auth.model.User;
 import com.campusnoteshub.auth.repository.PasswordResetOtpRepository;
 import com.campusnoteshub.auth.repository.UserRepository;
+
 import org.springframework.beans.factory.annotation.Autowired;
-import org.springframework.beans.factory.annotation.Value;
-import org.springframework.mail.SimpleMailMessage;
-import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.security.crypto.password.PasswordEncoder;
+import org.springframework.stereotype.Service;
+
 import org.springframework.data.mongodb.core.MongoTemplate;
 import org.springframework.data.mongodb.core.query.Criteria;
 import org.springframework.data.mongodb.core.query.Query;
 import org.springframework.data.mongodb.core.query.Update;
-import org.springframework.security.crypto.password.PasswordEncoder;
-import org.springframework.stereotype.Service;
 
 import java.security.SecureRandom;
 import java.time.LocalDateTime;
 import java.util.Optional;
+
 import jakarta.annotation.PostConstruct;
 
 @Service
@@ -43,19 +42,17 @@ public class AuthService {
     private CollegeResolver collegeResolver;
 
     @Autowired
-    private JavaMailSender mailSender;
-
-    @Autowired
     private MongoTemplate mongoTemplate;
-
-    @Value("${frontend.url:http://localhost:5173}")
-    private String frontendUrl;
 
     @PostConstruct
     public void fixCorruptedMongoData() {
-        // Fix _class mapping issues caused by saving fully qualified class names 
+        // Fix _class mapping issues caused by saving fully qualified class names
         // to a shared database. This ensures user-service doesn't crash on startup/query.
-        mongoTemplate.updateMulti(new Query(), new Update().unset("_class"), User.class);
+        mongoTemplate.updateMulti(
+                new Query(),
+                new Update().unset("_class"),
+                User.class
+        );
     }
 
     public AuthResponse register(RegisterRequest request) {
@@ -72,7 +69,7 @@ public class AuthService {
         // Resolve or create college and set collegeId
         String collegeId = collegeResolver.findOrCreateCollegeId(request.getCollege());
         user.setCollegeId(collegeId);
-        
+
         if (request.getEmail().toLowerCase().contains("admin")) {
             user.setRole("ADMIN");
         } else {
@@ -80,7 +77,12 @@ public class AuthService {
         }
 
         User savedUser = userRepository.save(user);
-        String token = jwtUtil.generateToken(savedUser.getId(), savedUser.getEmail(), savedUser.getRole());
+
+        String token = jwtUtil.generateToken(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
 
         return new AuthResponse(
                 token,
@@ -97,40 +99,60 @@ public class AuthService {
         User user = userRepository.findByEmail(request.getEmail())
                 .orElseThrow(() -> new RuntimeException("Invalid email or password"));
 
-        if (!passwordEncoder.matches(request.getPassword(), user.getPasswordHash())) {
+        if (!passwordEncoder.matches(
+                request.getPassword(),
+                user.getPasswordHash()
+        )) {
             throw new RuntimeException("Invalid email or password");
         }
 
         // Fix empty/null role in database and auto-promote admin emails
-        String currentRole = user.getRole(); // getRole() already normalizes empty to "USER"
+        String currentRole = user.getRole();
         boolean needsSave = false;
 
-        if (user.getEmail().toLowerCase().contains("admin") && !"ADMIN".equals(currentRole)) {
+        if (user.getEmail().toLowerCase().contains("admin")
+                && !"ADMIN".equals(currentRole)) {
+
             user.setRole("ADMIN");
             needsSave = true;
         }
 
         // Backfill collegeId for existing users who don't have one yet
-        if (user.getCollegeId() == null && user.getCollege() != null && !user.getCollege().isEmpty()) {
-            String collegeId = collegeResolver.findOrCreateCollegeId(user.getCollege());
+        if (user.getCollegeId() == null
+                && user.getCollege() != null
+                && !user.getCollege().isEmpty()) {
+
+            String collegeId =
+                    collegeResolver.findOrCreateCollegeId(user.getCollege());
+
             user.setCollegeId(collegeId);
             needsSave = true;
         }
 
         // If the raw role field in MongoDB was empty/null, save the normalized value
         if (needsSave) {
-            Query query = new Query(Criteria.where("id").is(user.getId()));
+            Query query = new Query(
+                    Criteria.where("id").is(user.getId())
+            );
+
             Update update = new Update();
+
             if (user.getRole() != null) {
                 update.set("role", user.getRole());
             }
+
             if (user.getCollegeId() != null) {
                 update.set("collegeId", user.getCollegeId());
             }
+
             mongoTemplate.updateFirst(query, update, User.class);
         }
 
-        String token = jwtUtil.generateToken(user.getId(), user.getEmail(), user.getRole());
+        String token = jwtUtil.generateToken(
+                user.getId(),
+                user.getEmail(),
+                user.getRole()
+        );
 
         return new AuthResponse(
                 token,
@@ -149,10 +171,19 @@ public class AuthService {
      */
     public void promoteToAdmin(String email) {
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found with email: " + email));
-        
-        Query query = new Query(Criteria.where("id").is(user.getId()));
-        Update update = new Update().set("role", "ADMIN");
+                .orElseThrow(() ->
+                        new RuntimeException(
+                                "User not found with email: " + email
+                        )
+                );
+
+        Query query = new Query(
+                Criteria.where("id").is(user.getId())
+        );
+
+        Update update = new Update()
+                .set("role", "ADMIN");
+
         mongoTemplate.updateFirst(query, update, User.class);
     }
 
@@ -162,28 +193,34 @@ public class AuthService {
      */
     public String forgotPassword(String email) {
         Optional<User> userOpt = userRepository.findByEmail(email);
+
         if (userOpt.isEmpty()) {
-            return "000000"; // Prevent email enumeration by returning a dummy OTP
+            return "000000";
         }
-        
+
         User user = userOpt.get();
 
         // Generate 6-digit OTP
         SecureRandom random = new SecureRandom();
         int otpValue = 100000 + random.nextInt(900000);
         String otpString = String.valueOf(otpValue);
-        
+
         // Hash OTP and store it in User entity
         String otpHash = passwordEncoder.encode(otpString);
-        LocalDateTime expiresAt = LocalDateTime.now().plusMinutes(10);
-        
-        Query query = new Query(Criteria.where("id").is(user.getId()));
+        LocalDateTime expiresAt =
+                LocalDateTime.now().plusMinutes(10);
+
+        Query query = new Query(
+                Criteria.where("id").is(user.getId())
+        );
+
         Update update = new Update()
                 .set("resetOtpHash", otpHash)
                 .set("resetOtpExpiresAt", expiresAt)
                 .set("resetOtpAttempts", 0);
+
         mongoTemplate.updateFirst(query, update, User.class);
-        
+
         return otpString;
     }
 
@@ -192,6 +229,7 @@ public class AuthService {
      */
     public boolean verifyOtp(String email, String otp) {
         Optional<User> userOpt = userRepository.findByEmail(email);
+
         if (userOpt.isEmpty()) {
             return false;
         }
@@ -202,20 +240,40 @@ public class AuthService {
             return false;
         }
 
-        if (user.getResetOtpAttempts() != null && user.getResetOtpAttempts() >= 5) {
-            throw new RuntimeException("Maximum OTP attempts reached. Please request a new OTP.");
+        if (user.getResetOtpAttempts() != null
+                && user.getResetOtpAttempts() >= 5) {
+
+            throw new RuntimeException(
+                    "Maximum OTP attempts reached. Please request a new OTP."
+            );
         }
 
-        if (user.getResetOtpExpiresAt() != null && user.getResetOtpExpiresAt().isBefore(LocalDateTime.now())) {
+        if (user.getResetOtpExpiresAt() != null
+                && user.getResetOtpExpiresAt()
+                        .isBefore(LocalDateTime.now())) {
+
             throw new RuntimeException("OTP has expired.");
         }
 
-        if (!passwordEncoder.matches(otp, user.getResetOtpHash())) {
-            int attempts = user.getResetOtpAttempts() != null ? user.getResetOtpAttempts() : 0;
-            
-            Query query = new Query(Criteria.where("id").is(user.getId()));
-            Update update = new Update().set("resetOtpAttempts", attempts + 1);
+        if (!passwordEncoder.matches(
+                otp,
+                user.getResetOtpHash()
+        )) {
+
+            int attempts =
+                    user.getResetOtpAttempts() != null
+                            ? user.getResetOtpAttempts()
+                            : 0;
+
+            Query query = new Query(
+                    Criteria.where("id").is(user.getId())
+            );
+
+            Update update = new Update()
+                    .set("resetOtpAttempts", attempts + 1);
+
             mongoTemplate.updateFirst(query, update, User.class);
+
             return false;
         }
 
@@ -225,20 +283,34 @@ public class AuthService {
     /**
      * Reset a user's password securely using an OTP.
      */
-    public void resetPassword(String email, String otp, String newPassword) {
+    public void resetPassword(
+            String email,
+            String otp,
+            String newPassword
+    ) {
+
         if (!verifyOtp(email, otp)) {
             throw new RuntimeException("Invalid OTP.");
         }
 
         User user = userRepository.findByEmail(email)
-                .orElseThrow(() -> new RuntimeException("User not found"));
-        
-        Query query = new Query(Criteria.where("id").is(user.getId()));
+                .orElseThrow(() ->
+                        new RuntimeException("User not found")
+                );
+
+        Query query = new Query(
+                Criteria.where("id").is(user.getId())
+        );
+
         Update update = new Update()
-                .set("passwordHash", passwordEncoder.encode(newPassword))
+                .set(
+                        "passwordHash",
+                        passwordEncoder.encode(newPassword)
+                )
                 .unset("resetOtpHash")
                 .unset("resetOtpExpiresAt")
                 .unset("resetOtpAttempts");
+
         mongoTemplate.updateFirst(query, update, User.class);
     }
 }
