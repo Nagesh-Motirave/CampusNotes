@@ -15,4 +15,7 @@ public interface NoteRequestRepository extends MongoRepository<NoteRequest, Stri
     List<NoteRequest> findBySubjectIgnoreCaseAndFulfilledFalse(String subject);
     
     List<NoteRequest> findTop20ByFulfilledFalseOrderByCreatedAtDesc();
+
+    // For notification: find requests that match subject, are unfulfilled, and haven't been notified yet
+    List<NoteRequest> findBySubjectIgnoreCaseAndFulfilledFalseAndNotifiedFalse(String subject);
 }

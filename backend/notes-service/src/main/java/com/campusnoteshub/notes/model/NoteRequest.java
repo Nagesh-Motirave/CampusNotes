@@ -21,6 +21,11 @@ public class NoteRequest {
     private String fulfilledBy;
     private String noteId;
     
+    // Notification tracking fields
+    private String requesterEmail;
+    private boolean notified = false;
+    private LocalDateTime notifiedAt;
+    
     private LocalDateTime createdAt = LocalDateTime.now();
 
     // Getters and Setters
@@ -50,6 +55,15 @@ public class NoteRequest {
 
     public String getNoteId() { return noteId; }
     public void setNoteId(String noteId) { this.noteId = noteId; }
+
+    public String getRequesterEmail() { return requesterEmail; }
+    public void setRequesterEmail(String requesterEmail) { this.requesterEmail = requesterEmail; }
+
+    public boolean isNotified() { return notified; }
+    public void setNotified(boolean notified) { this.notified = notified; }
+
+    public LocalDateTime getNotifiedAt() { return notifiedAt; }
+    public void setNotifiedAt(LocalDateTime notifiedAt) { this.notifiedAt = notifiedAt; }
 
     public LocalDateTime getCreatedAt() { return createdAt; }
     public void setCreatedAt(LocalDateTime createdAt) { this.createdAt = createdAt; }

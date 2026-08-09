@@ -81,6 +81,9 @@ services:
       - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
       - MONGODB_URI=mongodb://mongodb:27017/campus_notes_hub_notes
       - USER_SERVICE_URL=http://user-service:8083
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      - FRONTEND_URL=${FRONTEND_URL:-http://localhost:5173}
     depends_on:
       - mongodb
       - user-service

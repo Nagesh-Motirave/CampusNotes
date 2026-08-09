@@ -46,6 +46,9 @@ public class NoteService {
     @Autowired
     private RestTemplate restTemplate;
 
+    @Autowired
+    private NoteNotificationService noteNotificationService;
+
     @Value("${user-service.url}")
     private String userServiceUrl;
 
@@ -77,8 +80,7 @@ public class NoteService {
         
         // Note: Points are now awarded upon admin approval, not upload.
 
-        // Auto-fulfill matching requests and notify
-        // Auto-fulfill matching requests and notify
+        // Auto-fulfill matching requests and send in-app notifications
         List<NoteRequest> matchingRequests = noteRequestRepository.findBySubjectIgnoreCaseAndFulfilledFalse(note.getSubject());
         for (NoteRequest req : matchingRequests) {
             req.setFulfilled(true);
@@ -89,6 +91,9 @@ public class NoteService {
                 "Your requested note for " + note.getSubject() + " is now available!", 
                 "/notes/" + savedNote.getId());
         }
+
+        // Send email notifications asynchronously for un-notified matching requests
+        noteNotificationService.notifyMatchingRequests(savedNote, userId);
 
         return savedNote;
     }
@@ -339,6 +344,7 @@ public class NoteService {
         req.setDescription(dto.getDescription());
         req.setRequestedBy(userId);
         req.setRequesterName(userEmail.split("@")[0]);
+        req.setRequesterEmail(userEmail); // Store email for notification delivery
         return noteRequestRepository.save(req);
     }
 

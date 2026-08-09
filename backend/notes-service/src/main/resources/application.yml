@@ -14,3 +14,12 @@ spring:
 
 user-service:
   url: ${USER_SERVICE_URL:http://localhost:8083}
+
+# Resend transactional email API configuration
+resend:
+  api-key: ${RESEND_API_KEY:}
+  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+
+# Frontend URL for building links in notification emails
+frontend:
+  url: ${FRONTEND_URL:http://localhost:5173}

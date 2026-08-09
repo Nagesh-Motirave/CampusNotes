@@ -42,6 +42,9 @@ public class AdminNoteService {
     @Autowired
     private NoteService noteService;
 
+    @Autowired
+    private NoteNotificationService noteNotificationService;
+
     /**
      * Overview stats: total uploads, total downloads, pending approvals, open requests.
      */
@@ -340,6 +343,9 @@ public class AdminNoteService {
         if (!note.isVerified()) {
             note.setVerified(true);
             note = noteRepository.save(note);
+
+            // Notify users who requested notes matching this subject
+            noteNotificationService.notifyMatchingRequests(note, "ADMIN");
         }
         
         return note;
