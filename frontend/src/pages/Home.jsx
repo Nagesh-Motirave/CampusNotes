@@ -270,18 +270,18 @@ const Home = () => {
               <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
                 <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
               </svg>
-              AI-Powered Search • Trusted by 10,000+ students
+              Made for students • Find notes faster
             </div>
 
             <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-5 animate-slide-up leading-tight text-center">
-              Find Notes.{' '}
+              Study Smarter.{' '}
               <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-orange-400">
                 Share Knowledge.
               </span>
             </h1>
 
             <p className="text-lg md:text-xl text-white/80 mb-10 animate-slide-up text-center max-w-2xl" style={{ animationDelay: '0.1s' }}>
-              Your smart platform for discovering quality study notes from colleges across India. Try our natural language AI search!
+              Find class notes, exam material, and useful resources shared by students. Search by subject, semester, college, or topic.
             </p>
 
             {/* Smart Search Bar Component */}
@@ -290,7 +290,7 @@ const Home = () => {
                 <input 
                   type="text" 
                   className="w-full h-16 pl-14 pr-32 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-primary-500/30 text-lg transition-all"
-                  placeholder="Ask for 'Java Unit 3' or 'SPPU Semester 4'..."
+                  placeholder="What are you studying? Try “Java Unit 3” or “DBMS”..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
