@@ -97,3 +97,28 @@ export const updateUserRole = async (id, role) => {
   const response = await api.put(`/users/admin/${id}/role`, { role });
   return response.data;
 };
+
+export const deleteUser = async (id) => {
+  const response = await api.delete(`/users/admin/${id}`);
+  return response.data;
+};
+
+export const getAllReports = async () => {
+  const response = await api.get('/notes/admin/reports');
+  return response.data;
+};
+
+export const dismissReport = async (id) => {
+  const response = await api.delete(`/notes/admin/reports/${id}`);
+  return response.data;
+};
+
+export const getAllRequests = async () => {
+  const response = await api.get('/notes/admin/requests/all');
+  return response.data;
+};
+
+export const deleteRequest = async (id) => {
+  const response = await api.delete(`/notes/admin/requests/${id}`);
+  return response.data;
+};

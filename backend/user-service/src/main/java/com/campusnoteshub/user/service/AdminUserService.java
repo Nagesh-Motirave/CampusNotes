@@ -156,4 +156,10 @@ public class AdminUserService {
         return 0;
     }
 
+    public void deleteUser(String userId) {
+        if (!userRepository.existsById(userId)) {
+            throw new RuntimeException("User not found");
+        }
+        userRepository.deleteById(userId);
+    }
 }

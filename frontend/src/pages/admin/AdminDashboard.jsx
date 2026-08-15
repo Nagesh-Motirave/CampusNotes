@@ -25,6 +25,11 @@ import {
   archiveNote,
   restoreNote,
   permanentlyDeleteNote,
+  deleteUser,
+  getAllReports,
+  dismissReport,
+  getAllRequests,
+  deleteRequest,
 } from '../../api/admin';
 import {
   getAllColleges as fetchAllColleges,
@@ -38,6 +43,8 @@ import {
 const TABS = [
   { id: 'overview', label: 'Overview' },
   { id: 'pending', label: 'Pending Approval' },
+  { id: 'reports', label: 'Reports' },
+  { id: 'requests', label: 'Requests' },
   { id: 'archived', label: 'Archived Resources' },
   { id: 'users', label: 'Users' },
   { id: 'colleges', label: 'Colleges' },
@@ -88,6 +95,8 @@ const AdminDashboard = () => {
   const [universityStats, setUniversityStats] = useState([]);
   const [searchAnalytics, setSearchAnalytics] = useState(null);
   const [activities, setActivities] = useState([]);
+  const [reports, setReports] = useState([]);
+  const [allRequests, setAllRequests] = useState([]);
 
   const [userOverview, setUserOverview] = useState(null);
   const [usersByCollege, setUsersByCollege] = useState([]);
@@ -125,6 +134,8 @@ const AdminDashboard = () => {
         getUserOverviewStats(),
         getUsersByCollege(),
         getRecentUsers(),
+        getAllReports(),
+        getAllRequests(),
       ]);
 
       setOverview(overviewData);
@@ -140,6 +151,8 @@ const AdminDashboard = () => {
       setUserOverview(userOverviewData);
       setUsersByCollege(Array.isArray(collegeData) ? collegeData : []);
       setRecentUsers(Array.isArray(recentUsersData) ? recentUsersData : []);
+      setReports(Array.isArray(reportsData) ? reportsData : []);
+      setAllRequests(Array.isArray(allRequestsData) ? allRequestsData : []);
     } catch (error) {
       console.error('Failed to load admin dashboard data:', error);
       toast.error(`Failed to load admin dashboard data: ${error.message || error}`);
@@ -216,6 +229,53 @@ const AdminDashboard = () => {
       setRecentUsers((prev) => prev.map((u) => u.id === userId ? { ...u, role } : u));
     } catch {
       toast.error('Failed to update user role');
+    }
+  };
+
+  const handleDeleteUser = async (userId) => {
+    if (!window.confirm("Are you sure you want to permanently delete this user?")) return;
+    try {
+      await deleteUser(userId);
+      toast.success('User deleted successfully');
+      setRecentUsers((prev) => prev.filter((u) => u.id !== userId));
+      loadData();
+    } catch {
+      toast.error('Failed to delete user');
+    }
+  };
+
+  const handleDismissReport = async (reportId) => {
+    try {
+      await dismissReport(reportId);
+      toast.success('Report dismissed');
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+    } catch {
+      toast.error('Failed to dismiss report');
+    }
+  };
+
+  const handleDeleteReportedNote = async (noteId, reportId) => {
+    if (!window.confirm("Permanently delete this reported note?")) return;
+    try {
+      await permanentlyDeleteNote(noteId);
+      await dismissReport(reportId);
+      toast.success('Note deleted and report dismissed');
+      setReports((prev) => prev.filter((r) => r.id !== reportId));
+      loadData();
+    } catch {
+      toast.error('Failed to delete reported note');
+    }
+  };
+
+  const handleDeleteRequest = async (requestId) => {
+    if (!window.confirm("Delete this request?")) return;
+    try {
+      await deleteRequest(requestId);
+      toast.success('Request deleted');
+      setAllRequests((prev) => prev.filter((r) => r.id !== requestId));
+      loadData();
+    } catch {
+      toast.error('Failed to delete request');
     }
   };
 
@@ -407,6 +467,119 @@ const AdminDashboard = () => {
         </div>
       )}
 
+      {/* Reports Tab */}
+      {activeTab === 'reports' && (
+        <div className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-gray-900">Content Reports</h3>
+              <p className="text-sm text-gray-500">Review notes reported by users</p>
+            </div>
+            <div className="badge badge-red">{reports.length} reports</div>
+          </div>
+          {reports.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <svg className="w-12 h-12 mx-auto mb-3 text-emerald-300" fill="none" viewBox="0 0 24 24" stroke="currentColor"><path strokeLinecap="round" strokeLinejoin="round" strokeWidth={1.5} d="M9 12l2 2 4-4m6 2a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              <p className="text-sm">No reports to review!</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-5 py-3 text-left">Note ID</th>
+                    <th className="px-5 py-3 text-left">Reported By</th>
+                    <th className="px-5 py-3 text-left">Reason</th>
+                    <th className="px-5 py-3 text-left">Date</th>
+                    <th className="px-5 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {reports.map((report) => (
+                    <tr key={report.id} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 font-mono text-xs text-gray-900">{report.noteId}</td>
+                      <td className="px-5 py-3 text-gray-600">{report.userId}</td>
+                      <td className="px-5 py-3 text-red-600 font-medium">{report.reason}</td>
+                      <td className="px-5 py-3 text-gray-400 text-xs">{fmtDate(report.createdAt)}</td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => handleDismissReport(report.id)}
+                          className="btn-secondary text-xs py-1.5 px-3 mr-2"
+                        >
+                          Dismiss
+                        </button>
+                        <button
+                          onClick={() => handleDeleteReportedNote(report.noteId, report.id)}
+                          className="btn-primary bg-red-600 hover:bg-red-700 text-xs py-1.5 px-3"
+                        >
+                          Delete Note
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
+      {/* Requests Tab */}
+      {activeTab === 'requests' && (
+        <div className="glass-card overflow-hidden">
+          <div className="px-5 py-4 border-b border-gray-100 flex justify-between items-center">
+            <div>
+              <h3 className="font-semibold text-gray-900">Note Requests</h3>
+              <p className="text-sm text-gray-500">Manage all student note requests</p>
+            </div>
+            <div className="badge badge-amber">{allRequests.length} total</div>
+          </div>
+          {allRequests.length === 0 ? (
+            <div className="text-center py-16 text-gray-400">
+              <p className="text-sm">No note requests found.</p>
+            </div>
+          ) : (
+            <div className="overflow-x-auto">
+              <table className="w-full text-sm">
+                <thead className="bg-gray-50 text-gray-500 text-xs uppercase">
+                  <tr>
+                    <th className="px-5 py-3 text-left">Subject</th>
+                    <th className="px-5 py-3 text-left">Requester</th>
+                    <th className="px-5 py-3 text-left">Status</th>
+                    <th className="px-5 py-3 text-left">Date</th>
+                    <th className="px-5 py-3 text-right">Action</th>
+                  </tr>
+                </thead>
+                <tbody className="divide-y divide-gray-100">
+                  {allRequests.map((req) => (
+                    <tr key={req.id} className="hover:bg-gray-50">
+                      <td className="px-5 py-3 font-medium text-gray-900">{req.subject}</td>
+                      <td className="px-5 py-3 text-gray-600">{req.requesterName} (Sem {req.semester})</td>
+                      <td className="px-5 py-3">
+                        {req.fulfilled ? (
+                          <span className="badge badge-emerald">Fulfilled</span>
+                        ) : (
+                          <span className="badge badge-amber">Open</span>
+                        )}
+                      </td>
+                      <td className="px-5 py-3 text-gray-400 text-xs">{fmtDate(req.createdAt)}</td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => handleDeleteRequest(req.id)}
+                          className="btn-secondary text-red-600 hover:bg-red-50 text-xs py-1.5 px-3"
+                        >
+                          Delete
+                        </button>
+                      </td>
+                    </tr>
+                  ))}
+                </tbody>
+              </table>
+            </div>
+          )}
+        </div>
+      )}
+
       {/* Archived Resources Tab */}
       {activeTab === 'archived' && (
         <div className="glass-card overflow-hidden">
@@ -510,6 +683,7 @@ const AdminDashboard = () => {
                     <th className="px-5 py-3 text-left">College</th>
                     <th className="px-5 py-3 text-left">Role</th>
                     <th className="px-5 py-3 text-left">Joined</th>
+                    <th className="px-5 py-3 text-right">Action</th>
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-100">
@@ -529,6 +703,14 @@ const AdminDashboard = () => {
                         </select>
                       </td>
                       <td className="px-5 py-3 text-gray-400 text-xs">{fmtDate(user.createdAt)}</td>
+                      <td className="px-5 py-3 text-right">
+                        <button
+                          onClick={() => handleDeleteUser(user.id)}
+                          className="btn-secondary text-red-600 hover:bg-red-50 text-xs py-1.5 px-3"
+                        >
+                          Delete
+                        </button>
+                      </td>
                     </tr>
                   ))}
                 </tbody>

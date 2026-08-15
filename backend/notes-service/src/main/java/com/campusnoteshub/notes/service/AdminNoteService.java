@@ -400,4 +400,29 @@ public class AdminNoteService {
                 .orElseThrow(() -> new RuntimeException("Note not found"));
         noteRepository.deleteById(noteId);
     }
+
+    @Autowired
+    private com.campusnoteshub.notes.repository.ReportRepository reportRepository;
+
+    public List<com.campusnoteshub.notes.model.Report> getAllReports() {
+        return reportRepository.findAll();
+    }
+
+    public void dismissReport(String reportId) {
+        if (!reportRepository.existsById(reportId)) {
+            throw new RuntimeException("Report not found");
+        }
+        reportRepository.deleteById(reportId);
+    }
+
+    public List<NoteRequest> getAllRequests() {
+        return noteRequestRepository.findAll(Sort.by(Sort.Direction.DESC, "createdAt"));
+    }
+
+    public void deleteRequest(String requestId) {
+        if (!noteRequestRepository.existsById(requestId)) {
+            throw new RuntimeException("Request not found");
+        }
+        noteRequestRepository.deleteById(requestId);
+    }
 }

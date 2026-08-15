@@ -62,4 +62,16 @@ public class AdminUserController {
         return ResponseEntity.ok(adminUserService.updateUserRole(id, newRole));
     }
 
+    @DeleteMapping("/{id}")
+    public ResponseEntity<?> deleteUser(@PathVariable String id,
+                                        @RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
+        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            adminUserService.deleteUser(id);
+            return ResponseEntity.ok(Map.of("message", "User deleted successfully"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
 }

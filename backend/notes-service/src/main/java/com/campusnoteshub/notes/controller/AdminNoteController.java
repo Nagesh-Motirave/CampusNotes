@@ -112,4 +112,38 @@ public class AdminNoteController {
         adminNoteService.permanentlyDeleteNote(id);
         return ResponseEntity.ok().build();
     }
+
+    @GetMapping("/reports")
+    public ResponseEntity<?> getAllReports(@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
+        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(adminNoteService.getAllReports());
+    }
+
+    @DeleteMapping("/reports/{id}")
+    public ResponseEntity<?> dismissReport(@PathVariable String id, @RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
+        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            adminNoteService.dismissReport(id);
+            return ResponseEntity.ok(Map.of("message", "Report dismissed"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
+
+    @GetMapping("/requests/all")
+    public ResponseEntity<?> getAllRequests(@RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
+        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        return ResponseEntity.ok(adminNoteService.getAllRequests());
+    }
+
+    @DeleteMapping("/requests/{id}")
+    public ResponseEntity<?> deleteRequest(@PathVariable String id, @RequestHeader(value = "X-User-Role", defaultValue = "USER") String role) {
+        if (!isAdmin(role)) return ResponseEntity.status(HttpStatus.FORBIDDEN).build();
+        try {
+            adminNoteService.deleteRequest(id);
+            return ResponseEntity.ok(Map.of("message", "Request deleted"));
+        } catch (Exception e) {
+            return ResponseEntity.badRequest().body(Map.of("error", e.getMessage()));
+        }
+    }
 }
