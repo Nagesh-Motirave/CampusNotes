@@ -15,15 +15,16 @@ const FilterBar = ({ filters, onChange }) => {
   };
 
   const selectClass = `
-    appearance-none bg-white border border-gray-200 rounded-xl px-4 py-2.5 pr-8 text-sm text-gray-700
-    focus:outline-none focus:ring-2 focus:ring-primary-500 focus:border-transparent
-    cursor-pointer hover:border-gray-300 transition-all
+    appearance-none bg-slate-50 dark:bg-slate-800 border border-slate-200 dark:border-slate-700 rounded-full px-5 py-2.5 pr-10 text-sm font-semibold text-slate-700 dark:text-slate-300
+    focus:outline-none focus:ring-2 focus:ring-brand focus:border-transparent
+    cursor-pointer hover:border-slate-300 dark:hover:border-slate-600 transition-all shadow-sm
     bg-[url('data:image/svg+xml;charset=US-ASCII,%3Csvg%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%20width%3D%2220%22%20height%3D%2220%22%20viewBox%3D%220%200%2020%2020%22%3E%3Cpath%20fill%3D%22%236B7280%22%20d%3D%22M7%207l3%203%203-3%22%2F%3E%3C%2Fsvg%3E')]
-    bg-no-repeat bg-[position:right_0.5rem_center]
+    bg-no-repeat bg-[position:right_0.75rem_center]
   `.trim();
 
   return (
-    <div className="flex flex-wrap items-center gap-3 py-4">
+    <div className="flex flex-wrap items-center gap-3 py-2 px-1">
+      <div className="text-sm font-bold text-slate-400 mr-2 uppercase tracking-widest hidden md:block">Filter by</div>
       {/* Year filter */}
       <select
         value={filters.year || 'All Years'}
@@ -54,12 +55,12 @@ const FilterBar = ({ filters, onChange }) => {
       {(filters.year || filters.semester || filters.subject) && (
         <button
           onClick={() => onChange({ year: '', semester: '', subject: '' })}
-          className="text-sm text-primary-600 hover:text-primary-700 font-medium flex items-center gap-1 transition-colors"
+          className="text-sm text-brand hover:text-brand-dark font-bold flex items-center gap-1.5 transition-colors ml-auto bg-brand-light/10 px-4 py-2 rounded-full"
         >
-          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}>
+          <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}>
             <path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" />
           </svg>
-          Clear
+          Clear All
         </button>
       )}
     </div>

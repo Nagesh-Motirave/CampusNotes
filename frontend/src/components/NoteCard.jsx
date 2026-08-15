@@ -87,7 +87,7 @@ const NoteCard = ({ note }) => {
   };
 
   return (
-    <Link to={`/notes/${noteId}`} className="group flex flex-col bg-white dark:bg-gray-900 rounded-2xl overflow-hidden border border-gray-100 dark:border-gray-800 shadow-sm hover:shadow-xl hover:-translate-y-1 transition-all duration-300 relative">
+    <Link to={`/notes/${noteId}`} className="group flex flex-col bg-white dark:bg-slate-900 rounded-3xl overflow-hidden border border-slate-100 dark:border-slate-800 shadow-sm hover:shadow-soft hover:-translate-y-1.5 transition-all duration-300 relative">
       
       {/* Thumbnail Section */}
       <div className={`relative h-40 w-full bg-gradient-to-br ${getSubjectColor(subject)} p-4 flex flex-col justify-between overflow-hidden`}>
@@ -125,55 +125,55 @@ const NoteCard = ({ note }) => {
         </div>
 
         {/* Hover Actions Overlay */}
-        <div className="absolute inset-0 bg-black/60 opacity-0 group-hover:opacity-100 transition-opacity duration-300 flex items-center justify-center gap-4 z-20">
-          <span className="w-10 h-10 rounded-full bg-white text-gray-900 flex items-center justify-center hover:scale-110 transition-transform shadow-lg">
+        <div className="absolute inset-0 bg-slate-900/40 backdrop-blur-[2px] opacity-0 group-hover:opacity-100 transition-all duration-300 flex items-center justify-center gap-4 z-20">
+          <span className="w-12 h-12 rounded-full bg-white text-slate-900 flex items-center justify-center hover:scale-110 transition-transform shadow-glass">
             <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M15 12a3 3 0 11-6 0 3 3 0 016 0z" /><path strokeLinecap="round" strokeLinejoin="round" d="M2.458 12C3.732 7.943 7.523 5 12 5c4.478 0 8.268 2.943 9.542 7-1.274 4.057-5.064 7-9.542 7-4.477 0-8.268-2.943-9.542-7z" /></svg>
           </span>
           <button 
             onClick={handleQuickDownload}
             disabled={downloading}
-            className="w-10 h-10 rounded-full bg-primary-600 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-lg"
+            className="w-12 h-12 rounded-full bg-slate-900 text-white flex items-center justify-center hover:scale-110 transition-transform shadow-glass disabled:opacity-50"
           >
             {downloading ? (
               <div className="w-5 h-5 border-2 border-white/30 border-t-white rounded-full animate-spin" />
             ) : (
-              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              <svg className="w-5 h-5" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
             )}
           </button>
         </div>
       </div>
 
       {/* Content Section */}
-      <div className="p-4 flex-1 flex flex-col bg-white dark:bg-gray-900">
-        <h3 className="text-gray-900 dark:text-white font-bold text-base mb-1 line-clamp-2 min-h-[40px] group-hover:text-primary-600 transition-colors">
+      <div className="p-5 flex-1 flex flex-col bg-white dark:bg-slate-900">
+        <h3 className="text-slate-900 dark:text-white font-extrabold text-[17px] mb-1.5 line-clamp-2 min-h-[46px] group-hover:text-brand transition-colors font-heading leading-tight">
           {title}
         </h3>
         
-        <p className="text-xs text-gray-500 mb-3 truncate">
+        <p className="text-[13px] font-medium text-slate-500 mb-4 truncate">
           {note.branch || subject}
         </p>
 
-        <div className="mt-auto pt-3 border-t border-gray-100 dark:border-gray-800 flex items-center justify-between text-xs text-gray-500">
-          <div className="flex items-center gap-1.5">
-            <div className="w-6 h-6 rounded-full bg-primary-100 text-primary-700 flex items-center justify-center font-bold shadow-inner">
+        <div className="mt-auto pt-4 border-t border-slate-100 dark:border-slate-800/50 flex items-center justify-between text-[13px] text-slate-500">
+          <div className="flex items-center gap-2">
+            <div className="w-6 h-6 rounded-full bg-brand-light/20 text-brand-dark flex items-center justify-center font-bold text-xs ring-1 ring-brand/10">
               {uploaderName?.[0]?.toUpperCase() || '?'}
             </div>
-            <span className="truncate max-w-[80px] font-medium">{uploaderName || 'Anonymous'}</span>
+            <span className="truncate max-w-[80px] font-semibold text-slate-600 dark:text-slate-400">{uploaderName || 'Anonymous'}</span>
           </div>
 
-          <div className="flex items-center gap-3">
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-red-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
-              <span className="font-medium text-gray-700 dark:text-gray-300">{likesCount}</span>
+          <div className="flex items-center gap-3.5">
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-rose-500" fill="currentColor" viewBox="0 0 20 20"><path fillRule="evenodd" d="M3.172 5.172a4 4 0 015.656 0L10 6.343l1.172-1.171a4 4 0 115.656 5.656L10 17.657l-6.828-6.829a4 4 0 010-5.656z" clipRule="evenodd" /></svg>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{likesCount}</span>
             </div>
-            <div className="flex items-center gap-1">
-              <svg className="w-4 h-4 text-green-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
-              <span className="font-medium text-gray-700 dark:text-gray-300">{downloads}</span>
+            <div className="flex items-center gap-1.5">
+              <svg className="w-4 h-4 text-emerald-500" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M4 16v1a3 3 0 003 3h10a3 3 0 003-3v-1m-4-4l-4 4m0 0l-4-4m4 4V4" /></svg>
+              <span className="font-bold text-slate-700 dark:text-slate-300">{downloads}</span>
             </div>
           </div>
         </div>
 
-        <div className="flex items-center justify-between mt-2 pt-2 text-[10px] text-gray-400 font-medium">
+        <div className="flex items-center justify-between mt-3 pt-3 text-[11px] text-slate-400 font-bold tracking-wide uppercase">
           <span className="truncate max-w-[120px]">{college}</span>
           <span>{formatDate(createdAt)}</span>
         </div>

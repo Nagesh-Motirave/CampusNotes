@@ -256,41 +256,40 @@ const Home = () => {
     <div className="min-h-screen bg-gray-50 dark:bg-gray-900 transition-colors duration-300">
       {/* Hero Section */}
       <section className="relative overflow-hidden">
-        <div className="gradient-hero-overlay">
+        <div className="gradient-hero-overlay pb-10">
           {/* Animated background shapes */}
           <div className="absolute inset-0 overflow-hidden pointer-events-none">
-            <div className="absolute -top-40 -right-40 w-80 h-80 bg-white/10 rounded-full blur-3xl animate-pulse-soft" />
-            <div className="absolute -bottom-40 -left-40 w-96 h-96 bg-purple-500/10 rounded-full blur-3xl animate-pulse-soft" style={{ animationDelay: '1s' }} />
-            <div className="absolute top-1/2 left-1/2 -translate-x-1/2 -translate-y-1/2 w-[600px] h-[600px] bg-indigo-400/5 rounded-full blur-3xl" />
+            <div className="absolute top-0 right-1/4 w-[500px] h-[500px] bg-brand-light/20 rounded-full blur-[100px] animate-pulse-soft" />
+            <div className="absolute -bottom-20 -left-20 w-[600px] h-[600px] bg-pink-500/10 rounded-full blur-[120px] animate-pulse-soft" style={{ animationDelay: '1s' }} />
+            <div className="absolute top-1/4 left-1/2 -translate-x-1/2 w-[800px] h-[400px] bg-primary-400/10 rounded-[100%] blur-[80px]" />
           </div>
 
-          <div className="relative max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-20 md:py-28 flex flex-col items-center">
+          <div className="relative max-w-[1400px] mx-auto px-4 sm:px-6 lg:px-8 py-24 md:py-32 flex flex-col items-center">
             
-            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/10 backdrop-blur-sm border border-white/20 text-white/90 text-sm mb-6 animate-fade-in shadow-xl">
-              <svg className="w-4 h-4 text-amber-300" fill="currentColor" viewBox="0 0 20 20">
-                <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-              </svg>
-              Made for students • Find notes faster
+            <div className="inline-flex items-center gap-2 px-4 py-1.5 rounded-full bg-white/40 dark:bg-white/10 backdrop-blur-md border border-white/60 dark:border-white/20 text-slate-800 dark:text-white/90 text-sm font-bold mb-8 animate-fade-in shadow-sm">
+              <span className="w-2 h-2 rounded-full bg-emerald-500 animate-pulse" />
+              Over {fmtStat(stats.totalNotes)} Notes Shared
             </div>
 
-            <h1 className="text-4xl md:text-6xl font-extrabold text-white mb-5 animate-slide-up leading-tight text-center">
-              Study Smarter.{' '}
-              <span className="bg-clip-text text-transparent bg-gradient-to-r from-amber-300 to-orange-400">
+            <h1 className="text-5xl md:text-7xl font-extrabold text-slate-900 dark:text-white mb-6 animate-slide-up leading-[1.1] text-center font-heading tracking-tight">
+              Study Smarter.<br />
+              <span className="text-gradient drop-shadow-sm">
                 Share Knowledge.
               </span>
             </h1>
 
-            <p className="text-lg md:text-xl text-white/80 mb-10 animate-slide-up text-center max-w-2xl" style={{ animationDelay: '0.1s' }}>
+            <p className="text-lg md:text-xl text-slate-600 dark:text-slate-300 mb-12 animate-slide-up text-center max-w-2xl font-medium leading-relaxed" style={{ animationDelay: '0.1s' }}>
               Find class notes, exam material, and useful resources shared by students. Search by subject, semester, college, or topic.
             </p>
 
             {/* Smart Search Bar Component */}
             <div className="w-full max-w-3xl relative z-30 animate-slide-up" style={{ animationDelay: '0.2s' }} ref={searchWrapperRef}>
-              <form onSubmit={handleSearchSubmit} className="relative">
+              <form onSubmit={handleSearchSubmit} className="relative group">
+                <div className="absolute inset-0 bg-gradient-to-r from-primary-400 to-brand rounded-3xl blur-xl opacity-20 group-hover:opacity-40 transition-opacity duration-500"></div>
                 <input 
                   type="text" 
-                  className="w-full h-16 pl-14 pr-32 rounded-2xl bg-white/95 backdrop-blur-xl border border-white/40 shadow-2xl text-gray-900 placeholder-gray-500 focus:outline-none focus:ring-4 focus:ring-primary-500/30 text-lg transition-all"
-                  placeholder="What are you studying? Try “Java Unit 3” or “DBMS”..."
+                  className="w-full h-16 pl-14 pr-36 rounded-2xl bg-white/90 dark:bg-slate-900/90 backdrop-blur-xl border border-white/60 dark:border-slate-700 shadow-glass text-slate-900 dark:text-white placeholder-slate-400 focus:outline-none focus:ring-4 focus:ring-brand/30 focus:border-brand/50 text-lg transition-all font-medium relative z-10"
+                  placeholder="What are you studying? Try 'DBMS'..."
                   value={searchQuery}
                   onChange={(e) => {
                     setSearchQuery(e.target.value);
@@ -300,12 +299,12 @@ const Home = () => {
                   onFocus={() => setShowSuggestions(true)}
                   onKeyDown={handleSearchKeyDown}
                 />
-                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none">
-                  <svg className="h-6 w-6 text-primary-500" fill="none" viewBox="0 0 24 24" stroke="currentColor">
-                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
+                <div className="absolute inset-y-0 left-0 pl-5 flex items-center pointer-events-none z-20">
+                  <svg className="h-6 w-6 text-brand" fill="none" viewBox="0 0 24 24" stroke="currentColor">
+                    <path strokeLinecap="round" strokeLinejoin="round" strokeWidth={2.5} d="M21 21l-6-6m2-5a7 7 0 11-14 0 7 7 0 0114 0z" />
                   </svg>
                 </div>
-                <button type="submit" className="absolute right-2 top-2 bottom-2 px-6 rounded-xl bg-primary-600 hover:bg-primary-700 text-white font-bold transition-colors shadow-lg">
+                <button type="submit" className="absolute right-2 top-2 bottom-2 px-8 rounded-xl bg-slate-900 dark:bg-white dark:text-slate-900 hover:bg-slate-800 dark:hover:bg-slate-100 text-white font-bold transition-all shadow-md hover:shadow-lg hover:-translate-y-0.5 z-20">
                   Search
                 </button>
               </form>
@@ -363,15 +362,15 @@ const Home = () => {
             </div>
 
             {/* Quick stats */}
-            <div className="flex items-center justify-center gap-8 mt-12 animate-slide-up" style={{ animationDelay: '0.3s' }}>
+            <div className="flex items-center justify-center gap-10 mt-16 animate-slide-up" style={{ animationDelay: '0.3s' }}>
               {[
                 { label: 'Notes Shared',    value: fmtStat(stats.totalNotes)    },
                 { label: 'Total Students', value: fmtStat(stats.totalStudents) },
                 { label: 'Colleges',        value: fmtStat(stats.totalColleges) },
               ].map((stat) => (
-                <div key={stat.label} className="text-center">
-                  <p className="text-2xl md:text-3xl font-bold text-white drop-shadow-md">{stat.value}</p>
-                  <p className="text-xs md:text-sm text-white/80 font-medium uppercase tracking-widest mt-1">{stat.label}</p>
+                <div key={stat.label} className="text-center group">
+                  <p className="text-3xl md:text-4xl font-extrabold text-slate-900 dark:text-white drop-shadow-sm group-hover:scale-105 transition-transform font-heading">{stat.value}</p>
+                  <p className="text-xs md:text-sm text-slate-500 dark:text-slate-400 font-bold uppercase tracking-[0.15em] mt-2">{stat.label}</p>
                 </div>
               ))}
             </div>
@@ -380,34 +379,35 @@ const Home = () => {
       </section>
 
       {/* ── Filter Dropdowns ── */}
-      <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 mt-6 relative z-20">
-        <div className="bg-white dark:bg-gray-800 rounded-2xl shadow-xl border border-gray-100 dark:border-gray-700 p-2 transform -translate-y-8">
+      <div className="student-section relative z-20">
+        <div className="glass rounded-3xl p-3 shadow-glass transform -translate-y-8 max-w-4xl mx-auto flex justify-center">
           <FilterBar filters={filters} onChange={handleFiltersChange} />
         </div>
       </div>
 
       {/* ── Filtered Results Section ── */}
       {isFiltered && (
-        <section ref={filteredSectionRef} className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-12">
-          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4 mb-8 p-6 bg-gradient-to-r from-primary-50 to-indigo-50 dark:from-primary-900/20 dark:to-indigo-900/20 rounded-2xl border border-primary-100 dark:border-primary-800 shadow-sm">
-            <div className="flex items-center gap-4">
-              <div className="w-12 h-12 rounded-xl bg-primary-100 dark:bg-primary-900 text-primary-600 dark:text-primary-400 flex items-center justify-center flex-shrink-0 shadow-inner">
-                <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
+        <section ref={filteredSectionRef} className="student-section pb-16">
+          <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-5 mb-10 p-8 glass rounded-3xl relative overflow-hidden">
+            <div className="absolute top-0 right-0 w-64 h-64 bg-brand/10 rounded-full blur-[80px]" />
+            <div className="flex items-center gap-5 relative z-10">
+              <div className="w-14 h-14 rounded-2xl bg-brand-light/20 text-brand flex items-center justify-center flex-shrink-0 shadow-sm border border-brand/10">
+                <svg className="w-7 h-7" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M3 4a1 1 0 011-1h16a1 1 0 011 1v2.586a1 1 0 01-.293.707l-6.414 6.414a1 1 0 00-.293.707V17l-4 4v-6.586a1 1 0 00-.293-.707L3.293 7.293A1 1 0 013 6.586V4z" /></svg>
               </div>
               <div>
-                <h2 className="text-xl font-bold text-gray-900 dark:text-white">
+                <h2 className="text-2xl font-extrabold text-slate-900 dark:text-white font-heading">
                   Showing {buildFilterTitle} Notes
                 </h2>
-                <p className="text-sm text-gray-500 mt-1">
-                  {filterLoading ? 'Intelligent Search in progress...' : `${filteredNotes.length}${filterPage < filterTotalPages - 1 ? '+' : ''} highly relevant results found`}
+                <p className="text-sm font-medium text-slate-500 mt-1">
+                  {filterLoading ? 'Searching...' : `${filteredNotes.length}${filterPage < filterTotalPages - 1 ? '+' : ''} highly relevant results found`}
                 </p>
               </div>
             </div>
             <button
               onClick={handleClearFilters}
-              className="inline-flex items-center gap-2 px-5 py-2.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-300 font-medium text-sm border border-gray-200 dark:border-gray-700 hover:bg-red-50 dark:hover:bg-red-900/30 hover:text-red-600 hover:border-red-200 transition-all shadow-sm"
+              className="relative z-10 inline-flex items-center gap-2 px-6 py-3 rounded-xl bg-white dark:bg-slate-800 text-slate-700 dark:text-slate-300 font-bold text-sm border border-slate-200 dark:border-slate-700 hover:bg-rose-50 dark:hover:bg-rose-500/10 hover:text-rose-600 hover:border-rose-200 transition-all shadow-sm"
             >
-              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
+              <svg className="w-4 h-4" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M6 18L18 6M6 6l12 12" /></svg>
               Clear Filters
             </button>
           </div>
@@ -426,7 +426,7 @@ const Home = () => {
                   <button
                     onClick={() => setFilterPage(p => p + 1)}
                     disabled={filterLoading}
-                    className="inline-flex items-center gap-2 px-8 py-3.5 rounded-xl bg-white dark:bg-gray-800 text-gray-700 dark:text-gray-200 font-bold text-sm border border-gray-200 dark:border-gray-700 hover:bg-gray-50 dark:hover:bg-gray-700 transition-all shadow-md hover:shadow-lg disabled:opacity-50"
+                    className="btn-secondary px-8 py-3.5 shadow-sm"
                   >
                     {filterLoading ? 'Loading more...' : 'Load More Results'}
                   </button>
@@ -434,15 +434,15 @@ const Home = () => {
               )}
             </>
           ) : (
-            <div className="text-center py-20 bg-white dark:bg-gray-800 rounded-3xl border border-gray-100 dark:border-gray-700 shadow-sm">
-              <div className="w-24 h-24 bg-gray-50 dark:bg-gray-700 rounded-full flex items-center justify-center mx-auto mb-5">
-                <svg className="w-12 h-12 text-gray-300" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={1.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
+            <div className="text-center py-24 glass rounded-3xl border border-slate-100 dark:border-slate-800 shadow-sm">
+              <div className="w-24 h-24 bg-slate-100 dark:bg-slate-800 rounded-full flex items-center justify-center mx-auto mb-6">
+                <svg className="w-10 h-10 text-slate-300 dark:text-slate-600" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 12h6m-6 4h6m2 5H7a2 2 0 01-2-2V5a2 2 0 012-2h5.586a1 1 0 01.707.293l5.414 5.414a1 1 0 01.293.707V19a2 2 0 01-2 2z" /></svg>
               </div>
-              <h3 className="text-xl font-bold text-gray-800 dark:text-white mb-2">No exact matches</h3>
-              <p className="text-gray-500 max-w-sm mx-auto mb-6">
-                We couldn't find notes matching these exact filters. Our AI suggests trying broader terms or clearing some filters.
+              <h3 className="text-2xl font-extrabold text-slate-900 dark:text-white mb-2 font-heading">No exact matches</h3>
+              <p className="text-slate-500 font-medium max-w-sm mx-auto mb-8">
+                We couldn't find notes matching these exact filters. Try broadening your search.
               </p>
-              <button onClick={handleClearFilters} className="text-primary-600 font-bold text-sm hover:text-primary-700 hover:underline transition-all">
+              <button onClick={handleClearFilters} className="btn-secondary">
                 Clear all filters
               </button>
             </div>
@@ -452,19 +452,17 @@ const Home = () => {
 
       {/* ── Trending & Recent Sections (hidden when filtered) ── */}
       {!isFiltered && (
-        <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 py-10 space-y-20">
+        <div className="student-section py-16 space-y-24">
           
           {/* Trending Section */}
           <section>
-            <div className="flex items-end justify-between mb-8">
+            <div className="flex items-end justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                  <span className="text-4xl">🔥</span> Trending Notes
-                </h2>
-                <p className="text-gray-500 mt-2 font-medium">Most downloaded study material this week</p>
+                <span className="section-kicker">Popular right now</span>
+                <h2 className="section-heading">Trending Notes</h2>
               </div>
-              <Link to="/notes?sort=mostDownloaded" className="text-primary-600 font-bold hover:text-primary-700 flex items-center gap-1 group">
-                View all <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <Link to="/notes?sort=mostDownloaded" className="text-brand font-bold text-sm hover:text-brand-dark flex items-center gap-1.5 group transition-colors">
+                View all <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </Link>
             </div>
 
@@ -481,15 +479,13 @@ const Home = () => {
 
           {/* Recently Added Section */}
           <section>
-            <div className="flex items-end justify-between mb-8">
+            <div className="flex items-end justify-between mb-10">
               <div>
-                <h2 className="text-3xl font-extrabold text-gray-900 dark:text-white flex items-center gap-3">
-                  <span className="text-4xl">✨</span> Freshly Uploaded
-                </h2>
-                <p className="text-gray-500 mt-2 font-medium">Be the first to learn from the newest notes</p>
+                <span className="section-kicker">Just uploaded</span>
+                <h2 className="section-heading">Fresh Material</h2>
               </div>
-              <Link to="/notes?sort=latest" className="text-primary-600 font-bold hover:text-primary-700 flex items-center gap-1 group">
-                View all <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
+              <Link to="/notes?sort=latest" className="text-brand font-bold text-sm hover:text-brand-dark flex items-center gap-1.5 group transition-colors">
+                View all <svg className="w-4 h-4 transform group-hover:translate-x-1 transition-transform" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M9 5l7 7-7 7" /></svg>
               </Link>
             </div>
 
@@ -508,21 +504,21 @@ const Home = () => {
       )}
 
       {/* ── Request a Note CTA ── */}
-      <section className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8 pb-16 pt-8">
-        <div className="bg-gradient-to-br from-primary-600 to-indigo-700 rounded-[2rem] p-8 md:p-14 text-center text-white relative overflow-hidden shadow-2xl">
-          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.05%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-30 animate-pulse-soft" />
+      <section className="student-section pb-20">
+        <div className="gradient-primary rounded-[3rem] p-10 md:p-16 text-center text-white relative overflow-hidden shadow-2xl">
+          <div className="absolute inset-0 bg-[url('data:image/svg+xml,%3Csvg%20width%3D%2260%22%20height%3D%2260%22%20viewBox%3D%220%200%2060%2060%22%20xmlns%3D%22http%3A%2F%2Fwww.w3.org%2F2000%2Fsvg%22%3E%3Cg%20fill%3D%22none%22%20fill-rule%3D%22evenodd%22%3E%3Cg%20fill%3D%22%23ffffff%22%20fill-opacity%3D%220.07%22%3E%3Cpath%20d%3D%22M36%2034v-4h-2v4h-4v2h4v4h2v-4h4v-2h-4zm0-30V0h-2v4h-4v2h4v4h2V6h4V4h-4zM6%2034v-4H4v4H0v2h4v4h2v-4h4v-2H6zM6%204V0H4v4H0v2h4v4h2V6h4V4H6z%22%2F%3E%3C%2Fg%3E%3C%2Fg%3E%3C%2Fsvg%3E')] opacity-50 animate-float" />
           
           <div className="relative z-10 max-w-2xl mx-auto">
-            <h2 className="text-3xl md:text-4xl font-extrabold mb-4">Still can't find what you need?</h2>
-            <p className="text-white/80 mb-8 text-lg">
-              Our AI is smart, but sometimes the notes you want haven't been uploaded yet. Request specific notes and let fellow students help you out!
+            <h2 className="text-4xl md:text-5xl font-extrabold mb-5 font-heading">Still can't find what you need?</h2>
+            <p className="text-white/90 mb-10 text-lg font-medium">
+              Don't worry! You can request specific notes and let fellow students or our verified uploaders help you out.
             </p>
             <Link
               to={isAuthenticated ? '/request-notes' : '/login'}
-              className="inline-flex items-center gap-3 px-8 py-4 rounded-xl bg-white text-primary-700 font-extrabold hover:bg-gray-50 hover:scale-105 transition-all shadow-xl hover:shadow-2xl"
+              className="inline-flex items-center gap-3 px-10 py-4 rounded-2xl bg-white text-slate-900 font-extrabold hover:scale-105 transition-all shadow-xl hover:shadow-2xl"
             >
-              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2}><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
-              Request a Note Now
+              <svg className="w-6 h-6" fill="none" viewBox="0 0 24 24" stroke="currentColor" strokeWidth={2.5}><path strokeLinecap="round" strokeLinejoin="round" d="M8.228 9c.549-1.165 2.03-2 3.772-2 2.21 0 4 1.343 4 3 0 1.4-1.278 2.575-3.006 2.907-.542.104-.994.54-.994 1.093m0 3h.01M21 12a9 9 0 11-18 0 9 9 0 0118 0z" /></svg>
+              Request a Note
             </Link>
           </div>
         </div>
