@@ -119,7 +119,7 @@ const AdminDashboard = () => {
       const [
         overviewData, uploadData, topData, trendingData, pendingData, archivedData,
         requestsData, uniData, searchData, activityData,
-        userOverviewData, collegeData, recentUsersData, contributorsData,
+        userOverviewData, collegeData, recentUsersData, reportsData, allRequestsData,
       ] = await Promise.all([
         getOverviewStats(),
         getUploadDownloadStats(),
