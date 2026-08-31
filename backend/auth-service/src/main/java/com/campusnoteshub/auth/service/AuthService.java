@@ -381,7 +381,11 @@ public class AuthService {
         }
 
         // Deliver OTP to user's email
-        emailService.sendRegistrationOtpEmail(request.getEmail(), request.getName(), otpString);
+        boolean sent = emailService.sendRegistrationOtpEmail(request.getEmail(), request.getName(), otpString);
+        if (!sent) {
+            registrationOtpRepository.deleteByEmail(request.getEmail());
+            throw new RuntimeException("Unable to send verification email. Please check your email configuration (MAIL_USERNAME/MAIL_PASSWORD or RESEND_API_KEY).");
+        }
     }
 
     /**

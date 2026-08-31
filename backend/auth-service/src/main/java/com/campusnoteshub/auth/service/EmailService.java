@@ -15,6 +15,10 @@ import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
+/**
+ * Service for delivering transactional authentication emails (e.g., OTP verification).
+ * Supports both SMTP (e.g. Gmail) and Resend REST API based on active configuration.
+ */
 @Service
 public class EmailService {
 
@@ -30,17 +34,31 @@ public class EmailService {
     @Value("${spring.mail.username:}")
     private String smtpUsername;
 
+    @Value("${spring.mail.password:}")
+    private String smtpPassword;
+
     @Autowired(required = false)
     private JavaMailSender mailSender;
 
     private final RestTemplate restTemplate = new RestTemplate();
 
     /**
-     * Send 6-digit registration OTP verification email with both HTML and plain text bodies.
+     * Send 6-digit registration OTP verification email.
+     * Attempts SMTP first if configured, then Resend API.
+     *
+     * @param toEmail   the recipient email address
+     * @param userName  the name of the registering student
+     * @param otp       the 6-digit verification code
+     * @return true if the email was successfully accepted by the provider, false otherwise
      */
     public boolean sendRegistrationOtpEmail(String toEmail, String userName, String otp) {
+        if (toEmail == null || toEmail.isBlank()) {
+            log.error("❌ Cannot send registration email: Recipient email is blank.");
+            return false;
+        }
+
         if (otp == null || otp.isBlank()) {
-            log.error("❌ Cannot send registration email: OTP is null or blank");
+            log.error("❌ Cannot send registration email: OTP code is null or blank.");
             return false;
         }
 
@@ -48,28 +66,63 @@ public class EmailService {
         String htmlBody = buildOtpEmailHtml(userName, otp);
         String textBody = buildOtpEmailText(userName, otp);
 
-        // 1. Try Resend API if API key is provided and not default placeholder
-        if (resendApiKey != null && !resendApiKey.isBlank() && !resendApiKey.contains("your_api_key")) {
+        boolean hasSmtpConfig = mailSender != null 
+                && smtpUsername != null && !smtpUsername.isBlank() 
+                && smtpPassword != null && !smtpPassword.isBlank();
+
+        boolean hasResendConfig = resendApiKey != null 
+                && !resendApiKey.isBlank() 
+                && !resendApiKey.contains("your_api_key");
+
+        // 1. Try SMTP (e.g., Gmail App Password) if configured
+        if (hasSmtpConfig) {
+            log.info("Attempting to send registration OTP email via SMTP to {}", toEmail);
+            boolean sent = sendViaSmtp(toEmail, subject, htmlBody, textBody);
+            if (sent) {
+                return true;
+            }
+            log.warn("SMTP delivery failed for {}. Trying fallback if available...", toEmail);
+        }
+
+        // 2. Try Resend REST API if configured
+        if (hasResendConfig) {
+            log.info("Attempting to send registration OTP email via Resend API to {}", toEmail);
             boolean sent = sendViaResend(toEmail, subject, htmlBody, textBody);
             if (sent) {
                 return true;
             }
         }
 
-        // 2. Try SMTP via JavaMailSender if configured
-        if (mailSender != null && smtpUsername != null && !smtpUsername.isBlank()) {
-            boolean sent = sendViaSmtp(toEmail, subject, htmlBody, textBody);
-            if (sent) {
-                return true;
-            }
+        // 3. If neither provider is configured or both failed:
+        if (!hasSmtpConfig && !hasResendConfig) {
+            log.error("❌ No active email delivery service is configured.");
+            log.error("👉 Please configure either:");
+            log.error("   1) Gmail / SMTP: set MAIL_USERNAME and MAIL_PASSWORD (e.g., in .env or environment variables)");
+            log.error("   2) Resend API: set RESEND_API_KEY with your live 're_...' key");
         }
 
-        // 3. Fallback / Dev Log: Log OTP clearly in server logs
-        log.info("=================================================");
-        log.info("📧 [REGISTRATION OTP] To: {} ({}) | Code: {}", toEmail, userName, otp);
-        log.info("ℹ️ Valid for 5 minutes. Configure RESEND_API_KEY or SMTP in application.yml/environment for live delivery.");
-        log.info("=================================================");
-        return true;
+        return false;
+    }
+
+    private boolean sendViaSmtp(String toEmail, String subject, String htmlBody, String textBody) {
+        try {
+            MimeMessage message = mailSender.createMimeMessage();
+            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
+            
+            String from = (smtpUsername != null && !smtpUsername.isBlank()) ? smtpUsername : fromEmail;
+            helper.setFrom(from, "Campus Notes Hub");
+            helper.setTo(toEmail);
+            helper.setSubject(subject);
+            // Sets both text/plain and text/html as multipart/alternative
+            helper.setText(textBody, htmlBody);
+
+            mailSender.send(message);
+            log.info("✅ Registration OTP email successfully delivered via SMTP to {}", toEmail);
+            return true;
+        } catch (Exception e) {
+            log.error("❌ Failed to send email via SMTP to {}: {}", toEmail, e.getMessage());
+            return false;
+        }
     }
 
     private boolean sendViaResend(String toEmail, String subject, String htmlBody, String textBody) {
@@ -90,34 +143,15 @@ public class EmailService {
                     RESEND_API_URL, HttpMethod.POST, request, String.class);
 
             if (response.getStatusCode().is2xxSuccessful()) {
-                log.info("✅ Registration OTP email sent via Resend to {}", toEmail);
+                log.info("✅ Registration OTP email successfully delivered via Resend to {}", toEmail);
                 return true;
             } else {
-                log.error("❌ Resend API returned status {} for email to {}: {}",
+                log.error("❌ Resend API returned error status {} for {}: {}",
                         response.getStatusCode(), toEmail, response.getBody());
                 return false;
             }
         } catch (Exception e) {
             log.error("❌ Failed to send email via Resend to {}: {}", toEmail, e.getMessage());
-            return false;
-        }
-    }
-
-    private boolean sendViaSmtp(String toEmail, String subject, String htmlBody, String textBody) {
-        try {
-            MimeMessage message = mailSender.createMimeMessage();
-            MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            helper.setFrom(smtpUsername);
-            helper.setTo(toEmail);
-            helper.setSubject(subject);
-            // helper.setText(plainText, htmlText) sets up multipart/alternative
-            helper.setText(textBody, htmlBody);
-
-            mailSender.send(message);
-            log.info("✅ Registration OTP email sent via SMTP to {}", toEmail);
-            return true;
-        } catch (Exception e) {
-            log.error("❌ Failed to send email via SMTP to {}: {}", toEmail, e.getMessage());
             return false;
         }
     }
@@ -185,7 +219,7 @@ public class EmailService {
                                             </table>
 
                                             <p style="margin:0 0 16px;color:#374151;font-size:14px;line-height:1.5;text-align:center;">
-                                                Your code: <strong style="font-family:monospace;font-size:18px;color:#4338ca;letter-spacing:2px;">%s</strong>
+                                                Your verification code: <strong style="font-family:monospace;font-size:18px;color:#4338ca;letter-spacing:2px;">%s</strong>
                                             </p>
 
                                             <p style="margin:0 0 8px;color:#dc2626;font-size:13px;font-weight:500;text-align:center;">

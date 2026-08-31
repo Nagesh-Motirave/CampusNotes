@@ -58,6 +58,16 @@ services:
       - JAVA_TOOL_OPTIONS=-XX:+UseSerialGC -Xmx512m -Xms256m
       - MONGODB_URI=mongodb://mongodb:27017/campus_notes_hub_users
       - JWT_SECRET=campus-notes-hub-secret-key-that-is-at-least-256-bits-long-for-hs256
+      - RESEND_API_KEY=${RESEND_API_KEY:-}
+      - RESEND_FROM_EMAIL=${RESEND_FROM_EMAIL:-onboarding@resend.dev}
+      - MAIL_HOST=${MAIL_HOST:-smtp.gmail.com}
+      - MAIL_PORT=${MAIL_PORT:-587}
+      - MAIL_USERNAME=${MAIL_USERNAME:-}
+      - MAIL_PASSWORD=${MAIL_PASSWORD:-}
+      - SPRING_MAIL_HOST=${SPRING_MAIL_HOST:-}
+      - SPRING_MAIL_PORT=${SPRING_MAIL_PORT:-}
+      - SPRING_MAIL_USERNAME=${SPRING_MAIL_USERNAME:-}
+      - SPRING_MAIL_PASSWORD=${SPRING_MAIL_PASSWORD:-}
     depends_on:
       - mongodb
     networks:
