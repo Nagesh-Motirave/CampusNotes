@@ -6,6 +6,8 @@ import com.campusnoteshub.auth.dto.RegisterRequest;
 import com.campusnoteshub.auth.dto.ForgotPasswordRequest;
 import com.campusnoteshub.auth.dto.VerifyOtpRequest;
 import com.campusnoteshub.auth.dto.ResetPasswordRequest;
+import com.campusnoteshub.auth.dto.RegistrationOtpRequest;
+import com.campusnoteshub.auth.dto.RegistrationVerifyOtpRequest;
 import com.campusnoteshub.auth.service.AuthService;
 import jakarta.validation.Valid;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -68,5 +70,34 @@ public class AuthController {
     public ResponseEntity<java.util.Map<String, String>> resetPassword(@Valid @RequestBody ResetPasswordRequest request) {
         authService.resetPassword(request.getEmail(), request.getOtp(), request.getNewPassword());
         return ResponseEntity.ok(java.util.Map.of("message", "Password updated successfully."));
+    }
+
+    // ─── Registration OTP Endpoints ─────────────────────────────────────
+
+    /**
+     * Step 1: Send a registration OTP to verify email ownership.
+     * Accepts the same registration data (name, email, password, college),
+     * validates it, and returns a 6-digit OTP (DEMO: included in response).
+     */
+    @PostMapping("/register/send-otp")
+    public ResponseEntity<java.util.Map<String, String>> sendRegistrationOtp(
+            @Valid @RequestBody RegistrationOtpRequest request) {
+        String otp = authService.sendRegistrationOtp(request);
+        return ResponseEntity.ok(java.util.Map.of(
+                "message", "OTP sent to your email.",
+                "otp", otp
+        ));
+    }
+
+    /**
+     * Step 2: Verify the registration OTP and complete account creation.
+     * On success, returns the same AuthResponse (JWT + user data) as /auth/register.
+     */
+    @PostMapping("/register/verify-otp")
+    public ResponseEntity<AuthResponse> verifyRegistrationOtp(
+            @Valid @RequestBody RegistrationVerifyOtpRequest request) {
+        return ResponseEntity.ok(
+                authService.verifyRegistrationOtp(request.getEmail(), request.getOtp())
+        );
     }
 }

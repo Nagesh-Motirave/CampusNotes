@@ -4,8 +4,11 @@ import com.campusnoteshub.auth.config.JwtUtil;
 import com.campusnoteshub.auth.dto.AuthResponse;
 import com.campusnoteshub.auth.dto.LoginRequest;
 import com.campusnoteshub.auth.dto.RegisterRequest;
+import com.campusnoteshub.auth.dto.RegistrationOtpRequest;
+import com.campusnoteshub.auth.model.RegistrationOtp;
 import com.campusnoteshub.auth.model.User;
 import com.campusnoteshub.auth.repository.PasswordResetOtpRepository;
+import com.campusnoteshub.auth.repository.RegistrationOtpRepository;
 import com.campusnoteshub.auth.repository.UserRepository;
 
 import org.springframework.beans.factory.annotation.Autowired;
@@ -31,6 +34,9 @@ public class AuthService {
 
     @Autowired
     private PasswordResetOtpRepository otpRepository;
+
+    @Autowired
+    private RegistrationOtpRepository registrationOtpRepository;
 
     @Autowired
     private PasswordEncoder passwordEncoder;
@@ -312,5 +318,145 @@ public class AuthService {
                 .unset("resetOtpAttempts");
 
         mongoTemplate.updateFirst(query, update, User.class);
+    }
+
+    // ─── Registration OTP ───────────────────────────────────────────────
+
+    /**
+     * Step 1 of OTP-verified registration.
+     * Validates the registration data, generates a 6-digit OTP,
+     * stores the hashed OTP + registration data in a separate collection,
+     * and returns the plain OTP for DEMO purposes.
+     */
+    public String sendRegistrationOtp(RegistrationOtpRequest request) {
+        // Check if email is already registered
+        if (userRepository.existsByEmail(request.getEmail())) {
+            throw new RuntimeException("Email is already registered");
+        }
+
+        Optional<RegistrationOtp> existingOpt =
+                registrationOtpRepository.findByEmail(request.getEmail());
+
+        // If a pending OTP already exists, enforce resend limit
+        if (existingOpt.isPresent()) {
+            RegistrationOtp existing = existingOpt.get();
+
+            if (existing.getResendCount() >= 3) {
+                throw new RuntimeException(
+                        "Too many OTP requests. Please wait 5 minutes before trying again."
+                );
+            }
+
+            // Update with new OTP and increment resend count
+            SecureRandom random = new SecureRandom();
+            int otpValue = 100000 + random.nextInt(900000);
+            String otpString = String.valueOf(otpValue);
+
+            existing.setOtpHash(passwordEncoder.encode(otpString));
+            existing.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+            existing.setAttempts(0);
+            existing.setResendCount(existing.getResendCount() + 1);
+            // Update registration data in case user changed fields
+            existing.setName(request.getName());
+            existing.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            existing.setCollege(request.getCollege());
+
+            registrationOtpRepository.save(existing);
+            return otpString;
+        }
+
+        // First-time OTP for this email
+        SecureRandom random = new SecureRandom();
+        int otpValue = 100000 + random.nextInt(900000);
+        String otpString = String.valueOf(otpValue);
+
+        RegistrationOtp regOtp = new RegistrationOtp();
+        regOtp.setEmail(request.getEmail());
+        regOtp.setName(request.getName());
+        regOtp.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+        regOtp.setCollege(request.getCollege());
+        regOtp.setOtpHash(passwordEncoder.encode(otpString));
+        regOtp.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+        regOtp.setAttempts(0);
+        regOtp.setResendCount(0);
+
+        registrationOtpRepository.save(regOtp);
+        return otpString;
+    }
+
+    /**
+     * Step 2 of OTP-verified registration.
+     * Verifies the OTP, creates the user from stored registration data,
+     * cleans up the pending record, and returns an AuthResponse with JWT.
+     */
+    public AuthResponse verifyRegistrationOtp(String email, String otp) {
+        RegistrationOtp regOtp = registrationOtpRepository.findByEmail(email)
+                .orElseThrow(() ->
+                        new RuntimeException("No pending registration found. Please register again.")
+                );
+
+        // Check expiry
+        if (regOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
+            registrationOtpRepository.deleteByEmail(email);
+            throw new RuntimeException("OTP has expired. Please register again.");
+        }
+
+        // Check max attempts
+        if (regOtp.getAttempts() >= 5) {
+            registrationOtpRepository.deleteByEmail(email);
+            throw new RuntimeException(
+                    "Maximum OTP attempts reached. Please register again."
+            );
+        }
+
+        // Verify OTP
+        if (!passwordEncoder.matches(otp, regOtp.getOtpHash())) {
+            regOtp.setAttempts(regOtp.getAttempts() + 1);
+            registrationOtpRepository.save(regOtp);
+            throw new RuntimeException("Invalid OTP. Please try again.");
+        }
+
+        // Double-check email not taken (race condition guard)
+        if (userRepository.existsByEmail(email)) {
+            registrationOtpRepository.deleteByEmail(email);
+            throw new RuntimeException("Email is already registered");
+        }
+
+        // Create user from stored registration data
+        User user = new User();
+        user.setName(regOtp.getName());
+        user.setEmail(email);
+        user.setPasswordHash(regOtp.getPasswordHash());
+        user.setCollege(regOtp.getCollege());
+
+        String collegeId = collegeResolver.findOrCreateCollegeId(regOtp.getCollege());
+        user.setCollegeId(collegeId);
+
+        if (email.toLowerCase().contains("admin")) {
+            user.setRole("ADMIN");
+        } else {
+            user.setRole("USER");
+        }
+
+        User savedUser = userRepository.save(user);
+
+        // Clean up pending registration
+        registrationOtpRepository.deleteByEmail(email);
+
+        String token = jwtUtil.generateToken(
+                savedUser.getId(),
+                savedUser.getEmail(),
+                savedUser.getRole()
+        );
+
+        return new AuthResponse(
+                token,
+                savedUser.getId(),
+                savedUser.getName(),
+                savedUser.getEmail(),
+                savedUser.getCollege(),
+                savedUser.getCollegeId(),
+                savedUser.getRole()
+        );
     }
 }
