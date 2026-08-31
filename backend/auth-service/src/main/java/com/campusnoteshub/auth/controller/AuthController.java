@@ -82,10 +82,9 @@ public class AuthController {
     @PostMapping("/register/send-otp")
     public ResponseEntity<java.util.Map<String, String>> sendRegistrationOtp(
             @Valid @RequestBody RegistrationOtpRequest request) {
-        String otp = authService.sendRegistrationOtp(request);
+        authService.sendRegistrationOtp(request);
         return ResponseEntity.ok(java.util.Map.of(
-                "message", "OTP sent to your email.",
-                "otp", otp
+                "message", "A 6-digit verification code has been sent to your email."
         ));
     }
 

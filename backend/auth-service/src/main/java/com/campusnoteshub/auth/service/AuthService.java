@@ -39,6 +39,9 @@ public class AuthService {
     private RegistrationOtpRepository registrationOtpRepository;
 
     @Autowired
+    private EmailService emailService;
+
+    @Autowired
     private PasswordEncoder passwordEncoder;
 
     @Autowired
@@ -326,9 +329,9 @@ public class AuthService {
      * Step 1 of OTP-verified registration.
      * Validates the registration data, generates a 6-digit OTP,
      * stores the hashed OTP + registration data in a separate collection,
-     * and returns the plain OTP for DEMO purposes.
+     * and sends the OTP to the user's email address.
      */
-    public String sendRegistrationOtp(RegistrationOtpRequest request) {
+    public void sendRegistrationOtp(RegistrationOtpRequest request) {
         // Check if email is already registered
         if (userRepository.existsByEmail(request.getEmail())) {
             throw new RuntimeException("Email is already registered");
@@ -337,21 +340,21 @@ public class AuthService {
         Optional<RegistrationOtp> existingOpt =
                 registrationOtpRepository.findByEmail(request.getEmail());
 
+        SecureRandom random = new SecureRandom();
+        int otpValue = 100000 + random.nextInt(900000);
+        String otpString = String.valueOf(otpValue);
+
         // If a pending OTP already exists, enforce resend limit
         if (existingOpt.isPresent()) {
             RegistrationOtp existing = existingOpt.get();
 
-            if (existing.getResendCount() >= 3) {
+            if (existing.getResendCount() >= 5) {
                 throw new RuntimeException(
                         "Too many OTP requests. Please wait 5 minutes before trying again."
                 );
             }
 
             // Update with new OTP and increment resend count
-            SecureRandom random = new SecureRandom();
-            int otpValue = 100000 + random.nextInt(900000);
-            String otpString = String.valueOf(otpValue);
-
             existing.setOtpHash(passwordEncoder.encode(otpString));
             existing.setExpiresAt(LocalDateTime.now().plusMinutes(5));
             existing.setAttempts(0);
@@ -362,26 +365,23 @@ public class AuthService {
             existing.setCollege(request.getCollege());
 
             registrationOtpRepository.save(existing);
-            return otpString;
+        } else {
+            // First-time OTP for this email
+            RegistrationOtp regOtp = new RegistrationOtp();
+            regOtp.setEmail(request.getEmail());
+            regOtp.setName(request.getName());
+            regOtp.setPasswordHash(passwordEncoder.encode(request.getPassword()));
+            regOtp.setCollege(request.getCollege());
+            regOtp.setOtpHash(passwordEncoder.encode(otpString));
+            regOtp.setExpiresAt(LocalDateTime.now().plusMinutes(5));
+            regOtp.setAttempts(0);
+            regOtp.setResendCount(0);
+
+            registrationOtpRepository.save(regOtp);
         }
 
-        // First-time OTP for this email
-        SecureRandom random = new SecureRandom();
-        int otpValue = 100000 + random.nextInt(900000);
-        String otpString = String.valueOf(otpValue);
-
-        RegistrationOtp regOtp = new RegistrationOtp();
-        regOtp.setEmail(request.getEmail());
-        regOtp.setName(request.getName());
-        regOtp.setPasswordHash(passwordEncoder.encode(request.getPassword()));
-        regOtp.setCollege(request.getCollege());
-        regOtp.setOtpHash(passwordEncoder.encode(otpString));
-        regOtp.setExpiresAt(LocalDateTime.now().plusMinutes(5));
-        regOtp.setAttempts(0);
-        regOtp.setResendCount(0);
-
-        registrationOtpRepository.save(regOtp);
-        return otpString;
+        // Deliver OTP to user's email
+        emailService.sendRegistrationOtpEmail(request.getEmail(), request.getName(), otpString);
     }
 
     /**
@@ -392,28 +392,28 @@ public class AuthService {
     public AuthResponse verifyRegistrationOtp(String email, String otp) {
         RegistrationOtp regOtp = registrationOtpRepository.findByEmail(email)
                 .orElseThrow(() ->
-                        new RuntimeException("No pending registration found. Please register again.")
+                        new RuntimeException("No pending registration session found. Please start registration again.")
                 );
 
-        // Check expiry
+        // Check expiry (5 minutes)
         if (regOtp.getExpiresAt().isBefore(LocalDateTime.now())) {
             registrationOtpRepository.deleteByEmail(email);
-            throw new RuntimeException("OTP has expired. Please register again.");
+            throw new RuntimeException("OTP has expired. Please request a new OTP.");
         }
 
         // Check max attempts
         if (regOtp.getAttempts() >= 5) {
             registrationOtpRepository.deleteByEmail(email);
             throw new RuntimeException(
-                    "Maximum OTP attempts reached. Please register again."
+                    "Maximum OTP attempts reached. Please request a new OTP."
             );
         }
 
-        // Verify OTP
+        // Verify OTP match
         if (!passwordEncoder.matches(otp, regOtp.getOtpHash())) {
             regOtp.setAttempts(regOtp.getAttempts() + 1);
             registrationOtpRepository.save(regOtp);
-            throw new RuntimeException("Invalid OTP. Please try again.");
+            throw new RuntimeException("Invalid verification code. Please check and try again.");
         }
 
         // Double-check email not taken (race condition guard)
@@ -428,6 +428,7 @@ public class AuthService {
         user.setEmail(email);
         user.setPasswordHash(regOtp.getPasswordHash());
         user.setCollege(regOtp.getCollege());
+        user.setVerified(true);
 
         String collegeId = collegeResolver.findOrCreateCollegeId(regOtp.getCollege());
         user.setCollegeId(collegeId);

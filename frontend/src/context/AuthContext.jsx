@@ -89,6 +89,16 @@ export const AuthProvider = ({ children }) => {
     return data;
   }, []);
 
+  /** Save auth session from an AuthResponse object (e.g. from OTP verification) */
+  const setAuthSession = useCallback((data) => {
+    const { token: jwt, ...userData } = data;
+    localStorage.setItem('token', jwt);
+    localStorage.setItem('user', JSON.stringify(userData));
+    setToken(jwt);
+    setUser(userData);
+    return data;
+  }, []);
+
   /** Logout — clear token and user state */
   const logout = useCallback(() => {
     localStorage.removeItem('token');
@@ -111,8 +121,9 @@ export const AuthProvider = ({ children }) => {
     isAdmin,
     login,
     register,
+    setAuthSession,
     logout,
-  }), [user, token, loading, isAuthenticated, isAdmin, login, register, logout]);
+  }), [user, token, loading, isAuthenticated, isAdmin, login, register, setAuthSession, logout]);
 
   return (
     <AuthContext.Provider value={value}>
