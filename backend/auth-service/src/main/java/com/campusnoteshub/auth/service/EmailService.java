@@ -6,6 +6,7 @@ import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.http.*;
 import org.springframework.mail.javamail.JavaMailSender;
+import org.springframework.mail.javamail.JavaMailSenderImpl;
 import org.springframework.mail.javamail.MimeMessageHelper;
 import org.springframework.stereotype.Service;
 import org.springframework.web.client.RestTemplate;
@@ -14,10 +15,12 @@ import jakarta.mail.internet.MimeMessage;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Properties;
 
 /**
  * Service for delivering transactional authentication emails (e.g., OTP verification).
  * Supports both SMTP (e.g. Gmail) and Resend REST API based on active configuration.
+ * Includes dynamic JavaMailSender initialization and fallback mechanisms.
  */
 @Service
 public class EmailService {
@@ -30,6 +33,12 @@ public class EmailService {
 
     @Value("${resend.from-email:onboarding@resend.dev}")
     private String fromEmail;
+
+    @Value("${spring.mail.host:smtp.gmail.com}")
+    private String smtpHost;
+
+    @Value("${spring.mail.port:587}")
+    private int smtpPort;
 
     @Value("${spring.mail.username:}")
     private String smtpUsername;
@@ -44,12 +53,12 @@ public class EmailService {
 
     /**
      * Send 6-digit registration OTP verification email.
-     * Attempts SMTP first if configured, then Resend API.
+     * Attempts SMTP first if configured, then Resend API as fallback (or vice-versa).
      *
      * @param toEmail   the recipient email address
      * @param userName  the name of the registering student
      * @param otp       the 6-digit verification code
-     * @return true if the email was successfully accepted by the provider, false otherwise
+     * @return true if the email was successfully accepted by a provider, false otherwise
      */
     public boolean sendRegistrationOtpEmail(String toEmail, String userName, String otp) {
         if (toEmail == null || toEmail.isBlank()) {
@@ -66,57 +75,77 @@ public class EmailService {
         String htmlBody = buildOtpEmailHtml(userName, otp);
         String textBody = buildOtpEmailText(userName, otp);
 
-        boolean hasSmtpConfig = mailSender != null 
-                && smtpUsername != null && !smtpUsername.isBlank() 
-                && smtpPassword != null && !smtpPassword.isBlank();
+        String user = smtpUsername != null ? smtpUsername.trim() : "";
+        String pass = smtpPassword != null ? smtpPassword.trim() : "";
+        String rKey = resendApiKey != null ? resendApiKey.trim() : "";
 
-        boolean hasResendConfig = resendApiKey != null 
-                && !resendApiKey.isBlank() 
-                && !resendApiKey.contains("your_api_key");
+        boolean hasSmtpConfig = !user.isBlank() && !pass.isBlank();
+        boolean hasResendConfig = !rKey.isBlank() && !rKey.contains("your_api_key");
 
-        // 1. Try SMTP (e.g., Gmail App Password) if configured
+        // 1. If SMTP is configured, try SMTP first
         if (hasSmtpConfig) {
-            log.info("Attempting to send registration OTP email via SMTP to {}", toEmail);
-            boolean sent = sendViaSmtp(toEmail, subject, htmlBody, textBody);
+            log.info("Attempting OTP email delivery via SMTP ({}) to {}", smtpHost, toEmail);
+            boolean sent = sendViaSmtp(toEmail, subject, htmlBody, textBody, user, pass);
             if (sent) {
                 return true;
             }
-            log.warn("SMTP delivery failed for {}. Trying fallback if available...", toEmail);
+            log.warn("SMTP delivery failed for {}. Checking for fallback...", toEmail);
         }
 
-        // 2. Try Resend REST API if configured
+        // 2. If Resend is configured, try Resend API
         if (hasResendConfig) {
-            log.info("Attempting to send registration OTP email via Resend API to {}", toEmail);
-            boolean sent = sendViaResend(toEmail, subject, htmlBody, textBody);
+            log.info("Attempting OTP email delivery via Resend API to {}", toEmail);
+            boolean sent = sendViaResend(toEmail, subject, htmlBody, textBody, rKey);
             if (sent) {
                 return true;
             }
+            log.warn("Resend API delivery failed for {}.", toEmail);
         }
 
-        // 3. If neither provider is configured or both failed:
+        // 3. Log diagnostic assistance if no provider succeeded
         if (!hasSmtpConfig && !hasResendConfig) {
-            log.error("❌ No active email delivery service is configured.");
-            log.error("👉 Please configure either:");
-            log.error("   1) Gmail / SMTP: set MAIL_USERNAME and MAIL_PASSWORD (e.g., in .env or environment variables)");
-            log.error("   2) Resend API: set RESEND_API_KEY with your live 're_...' key");
+            log.error("❌ No active email delivery provider configured on the server.");
+            log.error("👉 Please set either:");
+            log.error("   1) Gmail SMTP: MAIL_USERNAME and MAIL_PASSWORD (16-char App Password)");
+            log.error("   2) Resend API: RESEND_API_KEY (live 're_...' key)");
         }
 
         return false;
     }
 
-    private boolean sendViaSmtp(String toEmail, String subject, String htmlBody, String textBody) {
+    private JavaMailSender createDynamicMailSender(String username, String password) {
+        JavaMailSenderImpl sender = new JavaMailSenderImpl();
+        sender.setHost(smtpHost != null && !smtpHost.isBlank() ? smtpHost.trim() : "smtp.gmail.com");
+        sender.setPort(smtpPort > 0 ? smtpPort : 587);
+        sender.setUsername(username);
+        sender.setPassword(password);
+
+        Properties props = sender.getJavaMailProperties();
+        props.put("mail.transport.protocol", "smtp");
+        props.put("mail.smtp.auth", "true");
+        props.put("mail.smtp.starttls.enable", "true");
+        props.put("mail.smtp.starttls.required", "true");
+        props.put("mail.smtp.ssl.protocols", "TLSv1.2 TLSv1.3");
+        props.put("mail.smtp.connectiontimeout", "10000");
+        props.put("mail.smtp.timeout", "10000");
+        props.put("mail.smtp.writetimeout", "10000");
+
+        return sender;
+    }
+
+    private boolean sendViaSmtp(String toEmail, String subject, String htmlBody, String textBody, String username, String password) {
         try {
-            MimeMessage message = mailSender.createMimeMessage();
+            JavaMailSender sender = this.mailSender != null ? this.mailSender : createDynamicMailSender(username, password);
+            MimeMessage message = sender.createMimeMessage();
             MimeMessageHelper helper = new MimeMessageHelper(message, true, "UTF-8");
-            
-            String from = (smtpUsername != null && !smtpUsername.isBlank()) ? smtpUsername : fromEmail;
-            helper.setFrom(from, "Campus Notes Hub");
+
+            helper.setFrom(username, "Campus Notes Hub");
             helper.setTo(toEmail);
             helper.setSubject(subject);
-            // Sets both text/plain and text/html as multipart/alternative
+            // Sets multipart/alternative (text/plain and text/html)
             helper.setText(textBody, htmlBody);
 
-            mailSender.send(message);
+            sender.send(message);
             log.info("✅ Registration OTP email successfully delivered via SMTP to {}", toEmail);
             return true;
         } catch (Exception e) {
@@ -125,14 +154,16 @@ public class EmailService {
         }
     }
 
-    private boolean sendViaResend(String toEmail, String subject, String htmlBody, String textBody) {
+    private boolean sendViaResend(String toEmail, String subject, String htmlBody, String textBody, String apiKey) {
         try {
             HttpHeaders headers = new HttpHeaders();
             headers.setContentType(MediaType.APPLICATION_JSON);
-            headers.setBearerAuth(resendApiKey.trim());
+            headers.setBearerAuth(apiKey);
+
+            String senderAddress = fromEmail != null && !fromEmail.isBlank() ? fromEmail : "onboarding@resend.dev";
 
             Map<String, Object> body = new HashMap<>();
-            body.put("from", "Campus Notes Hub <" + fromEmail + ">");
+            body.put("from", "Campus Notes Hub <" + senderAddress + ">");
             body.put("to", List.of(toEmail));
             body.put("subject", subject);
             body.put("html", htmlBody);

@@ -10,8 +10,8 @@ jwt:
   expiration: 86400000 # 24 hours in ms
 
 resend:
-  api-key: ${RESEND_API_KEY:}
-  from-email: ${RESEND_FROM_EMAIL:onboarding@resend.dev}
+  api-key: ${RESEND_API_KEY:${RESEND_KEY:${RESEND_APIKEY:}}}
+  from-email: ${RESEND_FROM_EMAIL:${FROM_EMAIL:${MAIL_FROM:onboarding@resend.dev}}}
 
 spring:
   application:
@@ -20,10 +20,10 @@ spring:
     mongodb:
       uri: ${MONGODB_URI:mongodb://localhost:27017/campus_notes_hub_users}
   mail:
-    host: ${SPRING_MAIL_HOST:${MAIL_HOST:smtp.gmail.com}}
-    port: ${SPRING_MAIL_PORT:${MAIL_PORT:587}}
-    username: ${SPRING_MAIL_USERNAME:${MAIL_USERNAME:}}
-    password: ${SPRING_MAIL_PASSWORD:${MAIL_PASSWORD:}}
+    host: ${SPRING_MAIL_HOST:${MAIL_HOST:${SMTP_HOST:smtp.gmail.com}}}
+    port: ${SPRING_MAIL_PORT:${MAIL_PORT:${SMTP_PORT:587}}}
+    username: ${SPRING_MAIL_USERNAME:${MAIL_USERNAME:${SMTP_USERNAME:${SMTP_USER:${EMAIL_USER:${MAIL_USER:}}}}}}
+    password: ${SPRING_MAIL_PASSWORD:${MAIL_PASSWORD:${SMTP_PASSWORD:${SMTP_PASS:${EMAIL_PASSWORD:${EMAIL_PASS:${MAIL_PASS:}}}}}}}
     properties:
       mail:
         smtp:
@@ -31,6 +31,8 @@ spring:
           starttls:
             enable: true
             required: true
+          ssl:
+            protocols: TLSv1.2 TLSv1.3
           connectiontimeout: 10000
           timeout: 10000
           writetimeout: 10000
